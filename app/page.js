@@ -2,11 +2,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import styles from './page.module.css'
 
-// ── Real, high-view Jain stavans from YouTube ──────────────────────────────
+// ── Popular Jain Stavans — confirmed single-video IDs (not compilations) ──
 const FEATURED_SONGS = [
   {
     id: '1',
-    title: 'Navkar Mantra - Om Namo Arihantanam',
+    title: 'Navkar Mantra - Om Namo Arihantanam (12 Hours)',
     singer: 'Hemina Shah',
     videoId: '1H-IU9lN9cI',
     category: 'Mantra',
@@ -30,75 +30,75 @@ const FEATURED_SONGS = [
   },
   {
     id: '4',
-    title: 'Jena Smaran Thi Jivan Na Sankat Jaay',
-    singer: 'Jai Jinendra',
+    title: 'Jena Smaran Thi Jivan Na Sankat',
+    singer: 'Shemaroo Jai Jinendra',
     videoId: '9s22z0p0334',
     category: 'Stavan',
     thumbnail: 'https://img.youtube.com/vi/9s22z0p0334/mqdefault.jpg',
   },
   {
     id: '5',
-    title: 'Kabhi Veer Banke Mahavir Banke',
-    singer: 'Jain Devotional',
-    videoId: 'xadtbnwkP30',
+    title: 'Aankh Mari Ugade To Shankheshwar',
+    singer: 'Kishore Manraja',
+    videoId: 'rIgRNtEcT-M',
     category: 'Stavan',
-    thumbnail: 'https://img.youtube.com/vi/xadtbnwkP30/mqdefault.jpg',
+    thumbnail: 'https://img.youtube.com/vi/rIgRNtEcT-M/mqdefault.jpg',
   },
   {
     id: '6',
-    title: 'Prabhu Shankheshwar Sambhaljo',
-    singer: 'Saregama Jain',
-    videoId: 'uwSkB6KvJRI',
-    category: 'Stavan',
-    thumbnail: 'https://img.youtube.com/vi/uwSkB6KvJRI/mqdefault.jpg',
-  },
-  {
-    id: '7',
-    title: 'Navkar Mantra with Meaning',
+    title: 'Navkar Mantra with Meaning & Lyrics',
     singer: 'Divine India',
     videoId: '-0RjpDXUNmg',
     category: 'Mantra',
     thumbnail: 'https://img.youtube.com/vi/-0RjpDXUNmg/mqdefault.jpg',
   },
   {
+    id: '7',
+    title: 'Sodhile Jivan No Saar O Maanavi',
+    singer: 'Jainsite.com',
+    videoId: 'Bbo3uVhYO8c',
+    category: 'Bhajan',
+    thumbnail: 'https://img.youtube.com/vi/Bbo3uVhYO8c/mqdefault.jpg',
+  },
+  {
     id: '8',
-    title: 'Shankheshwar Parshwanath Collection',
-    singer: 'Saregama Jain',
-    videoId: 'cqTN-QZkB4s',
-    category: 'Stavan',
-    thumbnail: 'https://img.youtube.com/vi/cqTN-QZkB4s/mqdefault.jpg',
-  },
-  {
-    id: '9',
-    title: 'Aankh Mari Ugade To Shankheshwar',
-    singer: 'Jai Jinendra',
-    videoId: 'pW4P0Nx3R0E',
-    category: 'Stavan',
-    thumbnail: 'https://img.youtube.com/vi/pW4P0Nx3R0E/mqdefault.jpg',
-  },
-  {
-    id: '10',
-    title: 'Most Powerful Navkar Mantra - Parthiv Gohil',
+    title: 'Navkar Mantra - Most Powerful (Nonstop)',
     singer: 'Parthiv Gohil',
     videoId: 'kESQAwjusbE',
     category: 'Mantra',
     thumbnail: 'https://img.youtube.com/vi/kESQAwjusbE/mqdefault.jpg',
   },
   {
-    id: '11',
-    title: 'Sodhile Jivan No Saar O Maanavi',
+    id: '9',
+    title: 'Jena Smaran Thi - with English Lyrics',
     singer: 'Jai Jinendra',
-    videoId: 'Bbo3uVhYO8c',
-    category: 'Bhajan',
-    thumbnail: 'https://img.youtube.com/vi/Bbo3uVhYO8c/mqdefault.jpg',
+    videoId: 'ijKNwkxRJT0',
+    category: 'Stavan',
+    thumbnail: 'https://img.youtube.com/vi/ijKNwkxRJT0/mqdefault.jpg',
+  },
+  {
+    id: '10',
+    title: 'Popular Jain Bhajans - Shankheshwar Parshwanath',
+    singer: 'Jai Jinendra',
+    videoId: 'oT7aadd9nUY',
+    category: 'Stavan',
+    thumbnail: 'https://img.youtube.com/vi/oT7aadd9nUY/mqdefault.jpg',
+  },
+  {
+    id: '11',
+    title: 'Navkar Mantra - Tina Kundalia (T-Series)',
+    singer: 'Tina Kundalia',
+    videoId: 'nzfdIYccQwM',
+    category: 'Mantra',
+    thumbnail: 'https://img.youtube.com/vi/nzfdIYccQwM/mqdefault.jpg',
   },
   {
     id: '12',
-    title: 'Jain Stavan Sangrah Vol 5',
-    singer: 'Saregama Jain',
-    videoId: 'XOT3O_rcAow',
-    category: 'Stavan',
-    thumbnail: 'https://img.youtube.com/vi/XOT3O_rcAow/mqdefault.jpg',
+    title: '108 Navkar Mantra - Original Tune',
+    singer: 'CA Anjali Jain',
+    videoId: 'CtTMILyOtNo',
+    category: 'Mantra',
+    thumbnail: 'https://img.youtube.com/vi/CtTMILyOtNo/mqdefault.jpg',
   },
 ]
 
@@ -145,7 +145,7 @@ const JainLogo = () => (
   </svg>
 )
 
-// Marquee component — scrolls text when it overflows its container
+// Scrolling marquee for long text in the player bar
 function MarqueeText({ text, className }) {
   const containerRef = useRef(null)
   const textRef = useRef(null)
@@ -443,8 +443,6 @@ export default function Home() {
       {/* Player bar */}
       {currentSong && (
         <div className={styles.player}>
-
-          {/* LEFT — fixed width, marquee text */}
           <div className={styles.playerLeft}>
             <div className={styles.playerThumb}>
               {currentSong.thumbnail
@@ -457,13 +455,11 @@ export default function Home() {
             </div>
           </div>
 
-          {/* CENTER — controls then progress bar */}
           <div className={styles.playerCenter}>
             <div className={styles.controlBtnRow}>
               <button
                 className={`${styles.controlBtn} ${shuffle ? styles.activeControl : ''}`}
-                onClick={() => setShuffle(!shuffle)}
-                title="Shuffle"
+                onClick={() => setShuffle(!shuffle)} title="Shuffle"
               >⇄</button>
               <button className={styles.controlBtn} onClick={playPrev}>⏮</button>
               <button className={styles.playBtn} onClick={togglePlay}>
@@ -472,11 +468,9 @@ export default function Home() {
               <button className={styles.controlBtn} onClick={playNext}>⏭</button>
               <button
                 className={`${styles.controlBtn} ${repeat ? styles.activeControl : ''}`}
-                onClick={() => setRepeat(!repeat)}
-                title="Repeat"
+                onClick={() => setRepeat(!repeat)} title="Repeat"
               >🔁</button>
             </div>
-
             <div className={styles.progressWrap}>
               <span className={styles.timeLabel}>{formatTime(currentTime)}</span>
               <div
@@ -492,14 +486,10 @@ export default function Home() {
             </div>
           </div>
 
-          {/* RIGHT — volume */}
           <div className={styles.playerRight}>
             <span className={styles.volIcon}>🔊</span>
             <input
-              type="range"
-              min="0"
-              max="100"
-              value={volume}
+              type="range" min="0" max="100" value={volume}
               onChange={e => setVolume(Number(e.target.value))}
               className={styles.volumeSlider}
             />
@@ -531,7 +521,6 @@ export default function Home() {
           Playlist {playlist.length > 0 && `(${playlist.length})`}
         </button>
       </div>
-
     </div>
   )
 }
