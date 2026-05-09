@@ -183,8 +183,9 @@ export default function Home() {
   const handleSeek = (e) => {
     if (!playerRef.current || !duration) return
     const rect = e.currentTarget.getBoundingClientRect()
-    const x = e.clientX - rect.left
-    const pct = x / rect.width
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX
+    const x = clientX - rect.left
+    const pct = Math.min(Math.max(x / rect.width, 0), 1)
     const seekTo = pct * duration
     playerRef.current.seekTo(seekTo, true)
     setProgress(pct * 100)
@@ -255,7 +256,6 @@ export default function Home() {
           <JainLogo />
           <span className={styles.logoText}>Jain Stavan</span>
         </div>
-
         <nav className={styles.nav}>
           <button
             className={`${styles.navItem} ${activeView === 'home' ? styles.active : ''}`}
@@ -268,7 +268,6 @@ export default function Home() {
             📋 My Playlist {playlist.length > 0 && <span className={styles.badge}>{playlist.length}</span>}
           </button>
         </nav>
-
         <div className={styles.categories}>
           <p className={styles.sectionLabel}>CATEGORIES</p>
           {CATEGORIES.map(cat => (
@@ -292,7 +291,6 @@ export default function Home() {
             onChange={e => { setSearchQuery(e.target.value); setActiveView('home') }}
           />
         </div>
-
         <div className={styles.content}>
           {activeView === 'playlist' ? (
             <>
@@ -340,29 +338,36 @@ export default function Home() {
           </div>
 
           <div className={styles.playerCenter}>
-            <button
-              className={`${styles.controlBtn} ${shuffle ? styles.activeControl : ''}`}
-              onClick={() => setShuffle(!shuffle)}
-              title="Shuffle"
-            >⇄</button>
-            <button className={styles.controlBtn} onClick={playPrev}>⏮</button>
-            <button className={styles.playBtn} onClick={togglePlay}>
-              {isPlaying ? '⏸' : '▶'}
-            </button>
-            <button className={styles.controlBtn} onClick={playNext}>⏭</button>
-            <button
-              className={`${styles.controlBtn} ${repeat ? styles.activeControl : ''}`}
-              onClick={() => setRepeat(!repeat)}
-              title="Repeat"
-            >🔁</button>
-
             <div className={styles.progressWrap}>
               <span className={styles.timeLabel}>{formatTime(currentTime)}</span>
-              <div className={styles.progressBar} onClick={handleSeek}>
+              <div
+                className={styles.progressBar}
+                onClick={handleSeek}
+                onTouchStart={handleSeek}
+                onTouchMove={handleSeek}
+              >
                 <div className={styles.progressFill} style={{ width: `${progress}%` }} />
                 <div className={styles.progressThumb} style={{ left: `${progress}%` }} />
               </div>
               <span className={styles.timeLabel}>{formatTime(duration)}</span>
+            </div>
+
+            <div className={styles.controlBtnRow}>
+              <button
+                className={`${styles.controlBtn} ${shuffle ? styles.activeControl : ''}`}
+                onClick={() => setShuffle(!shuffle)}
+                title="Shuffle"
+              >⇄</button>
+              <button className={styles.controlBtn} onClick={playPrev}>⏮</button>
+              <button className={styles.playBtn} onClick={togglePlay}>
+                {isPlaying ? '⏸' : '▶'}
+              </button>
+              <button className={styles.controlBtn} onClick={playNext}>⏭</button>
+              <button
+                className={`${styles.controlBtn} ${repeat ? styles.activeControl : ''}`}
+                onClick={() => setRepeat(!repeat)}
+                title="Repeat"
+              >🔁</button>
             </div>
           </div>
 
@@ -390,7 +395,7 @@ export default function Home() {
           Home
         </button>
         <button
-          className={`${styles.bottomNavItem}`}
+          className={styles.bottomNavItem}
           onClick={() => { setActiveView('home'); setTimeout(() => document.querySelector('input')?.focus(), 100) }}
         >
           <span className={styles.bottomNavIcon}>🔍</span>
