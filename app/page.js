@@ -93,34 +93,29 @@ export default function Home() {
     }, 500)
   }
 
-  const playNext = useCallback(() => {
-    if (!currentSong || currentList.length === 0) return
-    if (shuffle) {
-      const randomIdx = Math.floor(Math.random() * currentList.length)
-      playSong(currentList[randomIdx])
-    } else {
-      const idx = currentList.findIndex(s => s.videoId === currentSong.videoId)
-      playSong(currentList[(idx + 1) % currentList.length])
-    }
-  }, [currentSong, shuffle])
+  const currentList = searchQuery.trim().length >= 2 ? searchResults : FEATURED_SONGS
 
-  const initPlayer = useCallback((videoId) => {
-    if (playerRef.current && playerRef.current.loadVideoById) {
-      playerRef.current.loadVideoById(videoId)
-      playerRef.current.setVolume(volume)
-      startProgressTracking()
-      return
-    }
+  const playSong = useCallback((song) => {
+    setCurrentSong(song)
+    setIsPlaying(true)
+    setProgress(0)
+    setCurrentTime(0)
 
     const tryInit = () => {
       if (!window.YT || !window.YT.Player) {
         setTimeout(tryInit, 300)
         return
       }
+      if (playerRef.current && playerRef.current.loadVideoById) {
+        playerRef.current.loadVideoById(song.videoId)
+        playerRef.current.setVolume(volume)
+        startProgressTracking()
+        return
+      }
       playerRef.current = new window.YT.Player('yt-player', {
         height: '0',
         width: '0',
-        videoId,
+        videoId: song.videoId,
         playerVars: { autoplay: 1, controls: 0, modestbranding: 1 },
         events: {
           onReady: (e) => {
@@ -134,7 +129,13 @@ export default function Home() {
                 playerRef.current.seekTo(0)
                 playerRef.current.playVideo()
               } else {
-                playNext()
+                setCurrentSong(prev => {
+                  const list = currentList
+                  const idx = list.findIndex(s => s.videoId === prev?.videoId)
+                  const next = list[(idx + 1) % list.length]
+                  if (next) setTimeout(() => playSong(next), 100)
+                  return prev
+                })
               }
             }
           }
@@ -142,15 +143,7 @@ export default function Home() {
       })
     }
     tryInit()
-  }, [volume, repeat, playNext])
-
-  const playSong = (song) => {
-    setCurrentSong(song)
-    setIsPlaying(true)
-    setProgress(0)
-    setCurrentTime(0)
-    initPlayer(song.videoId)
-  }
+  }, [volume, repeat])
 
   const togglePlay = () => {
     if (!playerRef.current) return
@@ -170,13 +163,22 @@ export default function Home() {
     }
   }, [volume])
 
-  const currentList = searchQuery.trim().length >= 2 ? searchResults : FEATURED_SONGS
+  const playNext = useCallback(() => {
+    if (!currentSong || currentList.length === 0) return
+    if (shuffle) {
+      const randomIdx = Math.floor(Math.random() * currentList.length)
+      playSong(currentList[randomIdx])
+    } else {
+      const idx = currentList.findIndex(s => s.videoId === currentSong.videoId)
+      playSong(currentList[(idx + 1) % currentList.length])
+    }
+  }, [currentSong, shuffle, currentList, playSong])
 
-  const playPrev = () => {
+  const playPrev = useCallback(() => {
     if (!currentSong || currentList.length === 0) return
     const idx = currentList.findIndex(s => s.videoId === currentSong.videoId)
     playSong(currentList[(idx - 1 + currentList.length) % currentList.length])
-  }
+  }, [currentSong, currentList, playSong])
 
   const handleSeek = (e) => {
     if (!playerRef.current || !duration) return
@@ -247,7 +249,7 @@ export default function Home() {
     <div className={styles.container}>
       <div id="yt-player" style={{ display: 'none' }} />
 
-      {/* Sidebar */}
+      {/* Sidebar — desktop only */}
       <div className={styles.sidebar}>
         <div className={styles.logo}>
           <JainLogo />
@@ -279,7 +281,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Main */}
+      {/* Main content */}
       <div className={styles.main}>
         <div className={styles.topBar}>
           <input
@@ -322,7 +324,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Player */}
+      {/* Player bar */}
       {currentSong && (
         <div className={styles.player}>
           <div className={styles.playerLeft}>
@@ -331,7 +333,7 @@ export default function Home() {
                 ? <img src={currentSong.thumbnail} alt={currentSong.title} className={styles.thumbImg} />
                 : '🎵'}
             </div>
-            <div>
+            <div className={styles.playerInfo}>
               <p className={styles.playerTitle}>{currentSong.title}</p>
               <p className={styles.playerSinger}>{currentSong.singer}</p>
             </div>
@@ -377,6 +379,32 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {/* Bottom Nav — mobile only */}
+      <div className={styles.bottomNav}>
+        <button
+          className={`${styles.bottomNavItem} ${activeView === 'home' ? styles.active : ''}`}
+          onClick={() => { setActiveView('home'); setSearchQuery('') }}
+        >
+          <span className={styles.bottomNavIcon}>🏠</span>
+          Home
+        </button>
+        <button
+          className={`${styles.bottomNavItem}`}
+          onClick={() => { setActiveView('home'); setTimeout(() => document.querySelector('input')?.focus(), 100) }}
+        >
+          <span className={styles.bottomNavIcon}>🔍</span>
+          Search
+        </button>
+        <button
+          className={`${styles.bottomNavItem} ${activeView === 'playlist' ? styles.active : ''}`}
+          onClick={() => setActiveView('playlist')}
+        >
+          <span className={styles.bottomNavIcon}>📋</span>
+          Playlist {playlist.length > 0 && `(${playlist.length})`}
+        </button>
+      </div>
+
     </div>
   )
 }
