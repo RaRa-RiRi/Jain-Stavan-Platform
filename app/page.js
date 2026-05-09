@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import styles from './page.module.css'
 
 const FEATURED_SONGS = [
@@ -13,6 +13,47 @@ const FEATURED_SONGS = [
 
 const CATEGORIES = ['All', 'Stavan', 'Bhajan', 'Mantra', 'Aarti', 'Tirth']
 
+function formatTime(sec) {
+  if (!sec || isNaN(sec)) return '0:00'
+  const m = Math.floor(sec / 60)
+  const s = Math.floor(sec % 60)
+  return `${m}:${s.toString().padStart(2, '0')}`
+}
+
+const JainLogo = () => (
+  <svg viewBox="0 0 680 520" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="340" cy="255" r="240" fill="white" stroke="#111" strokeWidth="8"/>
+    <polygon points="240,400 440,400 430,420 250,420" fill="#111"/>
+    <polygon points="232,375 448,375 440,400 240,400" fill="#2a9d2a"/>
+    <polygon points="210,180 470,180 448,375 232,375" fill="white"/>
+    <polygon points="220,155 460,155 470,180 210,180" fill="#f5c800"/>
+    <polygon points="250,110 430,110 460,155 220,155" fill="#cc1111"/>
+    <polygon points="270,90 410,90 430,110 250,110" fill="#111"/>
+    <polygon points="270,90 410,90 430,110 460,155 470,180 448,375 440,400 430,420 250,420 240,400 232,375 210,180 220,155 250,110" fill="none" stroke="#1a1acc" strokeWidth="5"/>
+    <circle cx="340" cy="95" r="5" fill="white"/>
+    <g transform="translate(340,167)">
+      <rect x="-4" y="-22" width="8" height="44" fill="#cc1111"/>
+      <rect x="-22" y="-4" width="44" height="8" fill="#cc1111"/>
+      <rect x="4" y="-22" width="14" height="8" fill="#cc1111"/>
+      <rect x="14" y="4" width="8" height="14" fill="#cc1111"/>
+      <rect x="-18" y="14" width="14" height="8" fill="#cc1111"/>
+      <rect x="-22" y="-18" width="8" height="14" fill="#cc1111"/>
+    </g>
+    <ellipse cx="340" cy="305" rx="38" ry="48" fill="#f4a460"/>
+    <ellipse cx="302" cy="288" rx="10" ry="20" fill="#f4a460" transform="rotate(-20,302,288)"/>
+    <ellipse cx="318" cy="258" rx="8" ry="22" fill="#f4a460" transform="rotate(-5,318,258)"/>
+    <ellipse cx="334" cy="252" rx="8" ry="24" fill="#f4a460"/>
+    <ellipse cx="350" cy="255" rx="8" ry="22" fill="#f4a460" transform="rotate(5,350,255)"/>
+    <ellipse cx="365" cy="262" rx="7" ry="18" fill="#f4a460" transform="rotate(12,365,262)"/>
+    <rect x="302" y="340" width="76" height="20" rx="8" fill="#f4a460"/>
+    <circle cx="340" cy="312" r="20" fill="white" stroke="#2a9d2a" strokeWidth="2.5"/>
+    <text x="340" y="317" textAnchor="middle" fontSize="11" fill="#2a9d2a" fontWeight="bold">अहिंसा</text>
+    <text x="340" y="414" textAnchor="middle" fontSize="11" fill="white" fontWeight="bold">परस्परोपग्रहो जीवानाम्</text>
+    <rect x="252" y="420" width="176" height="28" fill="#cc1111" stroke="#1a1acc" strokeWidth="3"/>
+    <text x="340" y="439" textAnchor="middle" fontSize="13" fill="white" fontWeight="bold">॥ जय जिनेन्द्र ॥</text>
+  </svg>
+)
+
 export default function Home() {
   const [currentSong, setCurrentSong] = useState(null)
   const [isPlaying, setIsPlaying] = useState(false)
@@ -22,31 +63,144 @@ export default function Home() {
   const [activeCategory, setActiveCategory] = useState('All')
   const [playlist, setPlaylist] = useState([])
   const [activeView, setActiveView] = useState('home')
+  const [volume, setVolume] = useState(80)
+  const [shuffle, setShuffle] = useState(false)
+  const [repeat, setRepeat] = useState(false)
+  const [progress, setProgress] = useState(0)
+  const [duration, setDuration] = useState(0)
+  const [currentTime, setCurrentTime] = useState(0)
+  const playerRef = useRef(null)
+  const progressInterval = useRef(null)
   const searchTimeout = useRef(null)
 
   useEffect(() => {
-    if (searchQuery.trim().length < 2) {
-      setSearchResults([])
-      setIsSearching(false)
+    if (window.YT) return
+    const tag = document.createElement('script')
+    tag.src = 'https://www.youtube.com/iframe_api'
+    document.body.appendChild(tag)
+  }, [])
+
+  const startProgressTracking = () => {
+    clearInterval(progressInterval.current)
+    progressInterval.current = setInterval(() => {
+      if (playerRef.current && playerRef.current.getCurrentTime) {
+        const cur = playerRef.current.getCurrentTime()
+        const dur = playerRef.current.getDuration()
+        setCurrentTime(cur)
+        setDuration(dur)
+        setProgress(dur > 0 ? (cur / dur) * 100 : 0)
+      }
+    }, 500)
+  }
+
+  const playNext = useCallback(() => {
+    if (!currentSong || currentList.length === 0) return
+    if (shuffle) {
+      const randomIdx = Math.floor(Math.random() * currentList.length)
+      playSong(currentList[randomIdx])
+    } else {
+      const idx = currentList.findIndex(s => s.videoId === currentSong.videoId)
+      playSong(currentList[(idx + 1) % currentList.length])
+    }
+  }, [currentSong, shuffle])
+
+  const initPlayer = useCallback((videoId) => {
+    if (playerRef.current && playerRef.current.loadVideoById) {
+      playerRef.current.loadVideoById(videoId)
+      playerRef.current.setVolume(volume)
+      startProgressTracking()
       return
     }
 
+    const tryInit = () => {
+      if (!window.YT || !window.YT.Player) {
+        setTimeout(tryInit, 300)
+        return
+      }
+      playerRef.current = new window.YT.Player('yt-player', {
+        height: '0',
+        width: '0',
+        videoId,
+        playerVars: { autoplay: 1, controls: 0, modestbranding: 1 },
+        events: {
+          onReady: (e) => {
+            e.target.setVolume(volume)
+            e.target.playVideo()
+            startProgressTracking()
+          },
+          onStateChange: (e) => {
+            if (e.data === window.YT.PlayerState.ENDED) {
+              if (repeat) {
+                playerRef.current.seekTo(0)
+                playerRef.current.playVideo()
+              } else {
+                playNext()
+              }
+            }
+          }
+        }
+      })
+    }
+    tryInit()
+  }, [volume, repeat, playNext])
+
+  const playSong = (song) => {
+    setCurrentSong(song)
+    setIsPlaying(true)
+    setProgress(0)
+    setCurrentTime(0)
+    initPlayer(song.videoId)
+  }
+
+  const togglePlay = () => {
+    if (!playerRef.current) return
+    if (isPlaying) {
+      playerRef.current.pauseVideo()
+      clearInterval(progressInterval.current)
+    } else {
+      playerRef.current.playVideo()
+      startProgressTracking()
+    }
+    setIsPlaying(!isPlaying)
+  }
+
+  useEffect(() => {
+    if (playerRef.current && playerRef.current.setVolume) {
+      playerRef.current.setVolume(volume)
+    }
+  }, [volume])
+
+  const currentList = searchQuery.trim().length >= 2 ? searchResults : FEATURED_SONGS
+
+  const playPrev = () => {
+    if (!currentSong || currentList.length === 0) return
+    const idx = currentList.findIndex(s => s.videoId === currentSong.videoId)
+    playSong(currentList[(idx - 1 + currentList.length) % currentList.length])
+  }
+
+  const handleSeek = (e) => {
+    if (!playerRef.current || !duration) return
+    const rect = e.currentTarget.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const pct = x / rect.width
+    const seekTo = pct * duration
+    playerRef.current.seekTo(seekTo, true)
+    setProgress(pct * 100)
+    setCurrentTime(seekTo)
+  }
+
+  useEffect(() => {
+    if (searchQuery.trim().length < 2) { setSearchResults([]); return }
     setIsSearching(true)
     clearTimeout(searchTimeout.current)
-
     searchTimeout.current = setTimeout(async () => {
       try {
         const res = await fetch(`/api/search?q=${encodeURIComponent(searchQuery)}`)
         const data = await res.json()
         setSearchResults(data.results || [])
-      } catch (err) {
-        console.error('Search error:', err)
-        setSearchResults([])
-      } finally {
-        setIsSearching(false)
-      }
+      } catch { setSearchResults([]) }
+      finally { setIsSearching(false) }
     }, 600)
-
     return () => clearTimeout(searchTimeout.current)
   }, [searchQuery])
 
@@ -54,43 +208,15 @@ export default function Home() {
     ? searchResults
     : FEATURED_SONGS.filter(s => activeCategory === 'All' || s.category === activeCategory)
 
-  const playSong = (song) => {
-    setCurrentSong(song)
-    setIsPlaying(true)
-  }
-
-  const togglePlay = () => setIsPlaying(!isPlaying)
-
-  const currentList = searchQuery.trim().length >= 2 ? searchResults : FEATURED_SONGS
-
-  const playNext = () => {
-    if (!currentSong) return
-    const idx = currentList.findIndex(s => s.videoId === currentSong.videoId)
-    const next = currentList[(idx + 1) % currentList.length]
-    if (next) playSong(next)
-  }
-
-  const playPrev = () => {
-    if (!currentSong) return
-    const idx = currentList.findIndex(s => s.videoId === currentSong.videoId)
-    const prev = currentList[(idx - 1 + currentList.length) % currentList.length]
-    if (prev) playSong(prev)
-  }
-
   const addToPlaylist = (song, e) => {
     e.stopPropagation()
-    if (!playlist.find(s => s.videoId === song.videoId)) {
-      setPlaylist([...playlist, song])
-    }
+    if (!playlist.find(s => s.videoId === song.videoId)) setPlaylist([...playlist, song])
   }
 
   const removeFromPlaylist = (videoId, e) => {
     e.stopPropagation()
     setPlaylist(playlist.filter(s => s.videoId !== videoId))
   }
-
-  const getYouTubeSrc = (videoId, playing) =>
-    `https://www.youtube.com/embed/${videoId}?autoplay=${playing ? 1 : 0}&enablejsapi=1&controls=0&modestbranding=1`
 
   const SongCard = ({ song, index, showRemove }) => (
     <div
@@ -112,23 +238,31 @@ export default function Home() {
       <span className={styles.songCategory}>{song.category}</span>
       {showRemove
         ? <button className={styles.removeBtn} onClick={(e) => removeFromPlaylist(song.videoId, e)}>✕</button>
-        : <button className={styles.addBtn} onClick={(e) => addToPlaylist(song, e)} title="Add to playlist">+</button>
+        : <button className={styles.addBtn} onClick={(e) => addToPlaylist(song, e)}>+</button>
       }
     </div>
   )
 
   return (
     <div className={styles.container}>
+      <div id="yt-player" style={{ display: 'none' }} />
+
       {/* Sidebar */}
       <div className={styles.sidebar}>
         <div className={styles.logo}>
-          <span className={styles.logoIcon}>🕉️</span>
+          <JainLogo />
           <span className={styles.logoText}>Jain Stavan</span>
         </div>
 
         <nav className={styles.nav}>
-          <button className={`${styles.navItem} ${activeView === 'home' ? styles.active : ''}`} onClick={() => { setActiveView('home'); setSearchQuery('') }}>🏠 Home</button>
-          <button className={`${styles.navItem} ${activeView === 'playlist' ? styles.active : ''}`} onClick={() => setActiveView('playlist')}>
+          <button
+            className={`${styles.navItem} ${activeView === 'home' ? styles.active : ''}`}
+            onClick={() => { setActiveView('home'); setSearchQuery('') }}
+          >🏠 Home</button>
+          <button
+            className={`${styles.navItem} ${activeView === 'playlist' ? styles.active : ''}`}
+            onClick={() => setActiveView('playlist')}
+          >
             📋 My Playlist {playlist.length > 0 && <span className={styles.badge}>{playlist.length}</span>}
           </button>
         </nav>
@@ -140,9 +274,7 @@ export default function Home() {
               key={cat}
               className={`${styles.categoryItem} ${activeCategory === cat ? styles.active : ''}`}
               onClick={() => { setActiveCategory(cat); setActiveView('home'); setSearchQuery('') }}
-            >
-              {cat}
-            </button>
+            >{cat}</button>
           ))}
         </div>
       </div>
@@ -171,13 +303,19 @@ export default function Home() {
           ) : (
             <>
               <h2 className={styles.sectionTitle}>
-                {isSearching ? 'Searching...' : searchQuery.trim().length >= 2 ? `Results for "${searchQuery}"` : activeCategory === 'All' ? '🎵 Featured Stavans' : activeCategory}
+                {isSearching
+                  ? 'Searching...'
+                  : searchQuery.trim().length >= 2
+                    ? `Results for "${searchQuery}"`
+                    : activeCategory === 'All' ? '🎵 Featured Stavans' : activeCategory}
               </h2>
               {isSearching
                 ? <div className={styles.loadingWrap}><div className={styles.spinner} /><p>Finding stavans on YouTube...</p></div>
                 : displaySongs.length === 0
                   ? <p className={styles.emptyMsg}>No results found. Try a different search.</p>
-                  : displaySongs.map((song, i) => <SongCard key={song.videoId || song.id} song={song} index={i} showRemove={false} />)
+                  : displaySongs.map((song, i) =>
+                    <SongCard key={song.videoId || song.id} song={song} index={i} showRemove={false} />
+                  )
               }
             </>
           )}
@@ -200,22 +338,43 @@ export default function Home() {
           </div>
 
           <div className={styles.playerCenter}>
+            <button
+              className={`${styles.controlBtn} ${shuffle ? styles.activeControl : ''}`}
+              onClick={() => setShuffle(!shuffle)}
+              title="Shuffle"
+            >⇄</button>
             <button className={styles.controlBtn} onClick={playPrev}>⏮</button>
-            <button className={styles.playBtn} onClick={togglePlay}>{isPlaying ? '⏸' : '▶'}</button>
+            <button className={styles.playBtn} onClick={togglePlay}>
+              {isPlaying ? '⏸' : '▶'}
+            </button>
             <button className={styles.controlBtn} onClick={playNext}>⏭</button>
+            <button
+              className={`${styles.controlBtn} ${repeat ? styles.activeControl : ''}`}
+              onClick={() => setRepeat(!repeat)}
+              title="Repeat"
+            >🔁</button>
+
+            <div className={styles.progressWrap}>
+              <span className={styles.timeLabel}>{formatTime(currentTime)}</span>
+              <div className={styles.progressBar} onClick={handleSeek}>
+                <div className={styles.progressFill} style={{ width: `${progress}%` }} />
+                <div className={styles.progressThumb} style={{ left: `${progress}%` }} />
+              </div>
+              <span className={styles.timeLabel}>{formatTime(duration)}</span>
+            </div>
           </div>
 
           <div className={styles.playerRight}>
-            <span className={styles.categoryBadge}>{currentSong.category}</span>
+            <span className={styles.volIcon}>🔊</span>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={volume}
+              onChange={e => setVolume(Number(e.target.value))}
+              className={styles.volumeSlider}
+            />
           </div>
-
-          <iframe
-            key={currentSong.videoId + isPlaying}
-            src={getYouTubeSrc(currentSong.videoId, isPlaying)}
-            style={{ display: 'none' }}
-            allow="autoplay"
-            title="player"
-          />
         </div>
       )}
     </div>
