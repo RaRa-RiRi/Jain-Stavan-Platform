@@ -2,13 +2,104 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import styles from './page.module.css'
 
+// ── Real, high-view Jain stavans from YouTube ──────────────────────────────
 const FEATURED_SONGS = [
-  { id: '1', title: 'Navkar Mantra', singer: 'Hemant Chauhan', videoId: 'pMGIE7ggWaM', category: 'Mantra', thumbnail: null },
-  { id: '2', title: 'Jai Jinendra', singer: 'Shailendra Bhartti', videoId: 'FRY4bMkDjYs', category: 'Stavan', thumbnail: null },
-  { id: '3', title: 'Mahavir Swami Stavan', singer: 'Hemant Chauhan', videoId: '0DeGNcpNMH8', category: 'Stavan', thumbnail: null },
-  { id: '4', title: 'Parshwanath Stavan', singer: 'Falguni Pathak', videoId: 'JtDNOJrMBmw', category: 'Stavan', thumbnail: null },
-  { id: '5', title: 'Samedo Shikhar', singer: 'Hemant Chauhan', videoId: 'CqBFkSGCCBk', category: 'Tirth', thumbnail: null },
-  { id: '6', title: 'Adinath Bhagwan', singer: 'Shailendra Bhartti', videoId: 'v6yjYMWqvSk', category: 'Stavan', thumbnail: null },
+  {
+    id: '1',
+    title: 'Navkar Mantra - Om Namo Arihantanam',
+    singer: 'Hemina Shah',
+    videoId: '1H-IU9lN9cI',
+    category: 'Mantra',
+    thumbnail: 'https://img.youtube.com/vi/1H-IU9lN9cI/mqdefault.jpg',
+  },
+  {
+    id: '2',
+    title: 'Mane Vahalu Lage Paras Naam',
+    singer: 'Jai Jinendra',
+    videoId: 'bHa8XVvwB4M',
+    category: 'Stavan',
+    thumbnail: 'https://img.youtube.com/vi/bHa8XVvwB4M/mqdefault.jpg',
+  },
+  {
+    id: '3',
+    title: 'He Shankheshwar Swami - Parshwanath Aarti',
+    singer: 'Gunjan',
+    videoId: '3UcwaE5IRH0',
+    category: 'Aarti',
+    thumbnail: 'https://img.youtube.com/vi/3UcwaE5IRH0/mqdefault.jpg',
+  },
+  {
+    id: '4',
+    title: 'Jena Smaran Thi Jivan Na Sankat Jaay',
+    singer: 'Jai Jinendra',
+    videoId: '9s22z0p0334',
+    category: 'Stavan',
+    thumbnail: 'https://img.youtube.com/vi/9s22z0p0334/mqdefault.jpg',
+  },
+  {
+    id: '5',
+    title: 'Kabhi Veer Banke Mahavir Banke',
+    singer: 'Jain Devotional',
+    videoId: 'xadtbnwkP30',
+    category: 'Stavan',
+    thumbnail: 'https://img.youtube.com/vi/xadtbnwkP30/mqdefault.jpg',
+  },
+  {
+    id: '6',
+    title: 'Prabhu Shankheshwar Sambhaljo',
+    singer: 'Saregama Jain',
+    videoId: 'uwSkB6KvJRI',
+    category: 'Stavan',
+    thumbnail: 'https://img.youtube.com/vi/uwSkB6KvJRI/mqdefault.jpg',
+  },
+  {
+    id: '7',
+    title: 'Navkar Mantra with Meaning',
+    singer: 'Divine India',
+    videoId: '-0RjpDXUNmg',
+    category: 'Mantra',
+    thumbnail: 'https://img.youtube.com/vi/-0RjpDXUNmg/mqdefault.jpg',
+  },
+  {
+    id: '8',
+    title: 'Shankheshwar Parshwanath Collection',
+    singer: 'Saregama Jain',
+    videoId: 'cqTN-QZkB4s',
+    category: 'Stavan',
+    thumbnail: 'https://img.youtube.com/vi/cqTN-QZkB4s/mqdefault.jpg',
+  },
+  {
+    id: '9',
+    title: 'Aankh Mari Ugade To Shankheshwar',
+    singer: 'Jai Jinendra',
+    videoId: 'pW4P0Nx3R0E',
+    category: 'Stavan',
+    thumbnail: 'https://img.youtube.com/vi/pW4P0Nx3R0E/mqdefault.jpg',
+  },
+  {
+    id: '10',
+    title: 'Most Powerful Navkar Mantra - Parthiv Gohil',
+    singer: 'Parthiv Gohil',
+    videoId: 'kESQAwjusbE',
+    category: 'Mantra',
+    thumbnail: 'https://img.youtube.com/vi/kESQAwjusbE/mqdefault.jpg',
+  },
+  {
+    id: '11',
+    title: 'Sodhile Jivan No Saar O Maanavi',
+    singer: 'Jai Jinendra',
+    videoId: 'Bbo3uVhYO8c',
+    category: 'Bhajan',
+    thumbnail: 'https://img.youtube.com/vi/Bbo3uVhYO8c/mqdefault.jpg',
+  },
+  {
+    id: '12',
+    title: 'Jain Stavan Sangrah Vol 5',
+    singer: 'Saregama Jain',
+    videoId: 'XOT3O_rcAow',
+    category: 'Stavan',
+    thumbnail: 'https://img.youtube.com/vi/XOT3O_rcAow/mqdefault.jpg',
+  },
 ]
 
 const CATEGORIES = ['All', 'Stavan', 'Bhajan', 'Mantra', 'Aarti', 'Tirth']
@@ -53,6 +144,33 @@ const JainLogo = () => (
     <text x="340" y="439" textAnchor="middle" fontSize="13" fill="white" fontWeight="bold">॥ जय जिनेन्द्र ॥</text>
   </svg>
 )
+
+// Marquee component — scrolls text when it overflows its container
+function MarqueeText({ text, className }) {
+  const containerRef = useRef(null)
+  const textRef = useRef(null)
+  const [shouldScroll, setShouldScroll] = useState(false)
+
+  useEffect(() => {
+    const check = () => {
+      if (containerRef.current && textRef.current) {
+        setShouldScroll(textRef.current.scrollWidth > containerRef.current.clientWidth + 2)
+      }
+    }
+    check()
+    const timer = setTimeout(check, 200)
+    window.addEventListener('resize', check)
+    return () => { clearTimeout(timer); window.removeEventListener('resize', check) }
+  }, [text])
+
+  return (
+    <div ref={containerRef} className={styles.marqueeContainer}>
+      <span ref={textRef} className={`${className} ${shouldScroll ? styles.marqueeScroll : ''}`}>
+        {text}
+      </span>
+    </div>
+  )
+}
 
 export default function Home() {
   const [currentSong, setCurrentSong] = useState(null)
@@ -307,7 +425,7 @@ export default function Home() {
                   ? 'Searching...'
                   : searchQuery.trim().length >= 2
                     ? `Results for "${searchQuery}"`
-                    : activeCategory === 'All' ? '🎵 Featured Stavans' : activeCategory}
+                    : activeCategory === 'All' ? '🎵 Popular Stavans' : activeCategory}
               </h2>
               {isSearching
                 ? <div className={styles.loadingWrap}><div className={styles.spinner} /><p>Finding stavans on YouTube...</p></div>
@@ -325,6 +443,8 @@ export default function Home() {
       {/* Player bar */}
       {currentSong && (
         <div className={styles.player}>
+
+          {/* LEFT — fixed width, marquee text */}
           <div className={styles.playerLeft}>
             <div className={styles.playerThumb}>
               {currentSong.thumbnail
@@ -332,26 +452,13 @@ export default function Home() {
                 : '🎵'}
             </div>
             <div className={styles.playerInfo}>
-              <p className={styles.playerTitle}>{currentSong.title}</p>
-              <p className={styles.playerSinger}>{currentSong.singer}</p>
+              <MarqueeText text={currentSong.title} className={styles.playerTitle} />
+              <MarqueeText text={currentSong.singer} className={styles.playerSinger} />
             </div>
           </div>
 
+          {/* CENTER — controls then progress bar */}
           <div className={styles.playerCenter}>
-            <div className={styles.progressWrap}>
-              <span className={styles.timeLabel}>{formatTime(currentTime)}</span>
-              <div
-                className={styles.progressBar}
-                onClick={handleSeek}
-                onTouchStart={handleSeek}
-                onTouchMove={handleSeek}
-              >
-                <div className={styles.progressFill} style={{ width: `${progress}%` }} />
-                <div className={styles.progressThumb} style={{ left: `${progress}%` }} />
-              </div>
-              <span className={styles.timeLabel}>{formatTime(duration)}</span>
-            </div>
-
             <div className={styles.controlBtnRow}>
               <button
                 className={`${styles.controlBtn} ${shuffle ? styles.activeControl : ''}`}
@@ -369,8 +476,23 @@ export default function Home() {
                 title="Repeat"
               >🔁</button>
             </div>
+
+            <div className={styles.progressWrap}>
+              <span className={styles.timeLabel}>{formatTime(currentTime)}</span>
+              <div
+                className={styles.progressBar}
+                onClick={handleSeek}
+                onTouchStart={handleSeek}
+                onTouchMove={handleSeek}
+              >
+                <div className={styles.progressFill} style={{ width: `${progress}%` }} />
+                <div className={styles.progressThumb} style={{ left: `${progress}%` }} />
+              </div>
+              <span className={styles.timeLabel}>{formatTime(duration)}</span>
+            </div>
           </div>
 
+          {/* RIGHT — volume */}
           <div className={styles.playerRight}>
             <span className={styles.volIcon}>🔊</span>
             <input

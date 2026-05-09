@@ -210,20 +210,22 @@
   grid-row: 2 / 3;
   background: #181818;
   border-top: 1px solid #282828;
-  display: flex;
+  display: grid;
+  /* Fixed left (song info), flexible center (controls), fixed right (volume) */
+  grid-template-columns: 260px 1fr 200px;
   align-items: center;
-  justify-content: space-between;
   padding: 0 24px;
   z-index: 100;
   gap: 16px;
 }
 
+/* ── Player Left — fixed width with marquee ── */
 .playerLeft {
   display: flex;
   align-items: center;
   gap: 14px;
-  width: 260px;
   min-width: 0;
+  overflow: hidden;
 }
 
 .playerThumb {
@@ -239,20 +241,62 @@
   overflow: hidden;
 }
 
+/* playerInfo fills remaining space in playerLeft */
+.playerInfo {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Marquee container — clips text and hides overflow */
+.marqueeContainer {
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Static text — no animation needed */
 .playerTitle {
   font-size: 14px;
   font-weight: 500;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  display: block;
 }
-.playerSinger { font-size: 12px; color: #b3b3b3; margin-top: 2px; }
 
+.playerSinger {
+  font-size: 12px;
+  color: #b3b3b3;
+  margin-top: 3px;
+  white-space: nowrap;
+  display: block;
+}
+
+/* Scrolling animation — applied when text overflows */
+@keyframes marquee {
+  0%   { transform: translateX(0); }
+  15%  { transform: translateX(0); }        /* pause at start */
+  85%  { transform: translateX(var(--scroll-distance, -60%)); }
+  100% { transform: translateX(var(--scroll-distance, -60%)); } /* pause at end */
+}
+
+.marqueeScroll {
+  display: inline-block;
+  animation: marquee 6s ease-in-out infinite alternate;
+  padding-right: 24px;
+}
+
+/* ── Player Center ── */
 .playerCenter {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 12px;
-  flex: 1;
+  gap: 6px;
+}
+
+.controlBtnRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   justify-content: center;
 }
 
@@ -289,8 +333,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  flex: 1;
-  max-width: 400px;
+  width: 100%;
 }
 
 .timeLabel {
@@ -333,11 +376,11 @@
 }
 .progressBar:hover .progressThumb { opacity: 1; }
 
+/* ── Player Right ── */
 .playerRight {
   display: flex;
   align-items: center;
   gap: 8px;
-  width: 160px;
   justify-content: flex-end;
 }
 
@@ -423,11 +466,11 @@
     display: none;
   }
 
-  /* Player — full visible on mobile */
+  /* Player — stacked layout on mobile */
   .player {
     grid-row: 2 / 3;
     grid-column: 1;
-    flex-direction: column;
+    grid-template-columns: 1fr;
     height: auto;
     padding: 10px 16px 6px;
     gap: 6px;
@@ -439,16 +482,8 @@
     gap: 12px;
   }
 
-  .playerInfo {
-    flex: 1;
-    min-width: 0;
-  }
-
   .playerTitle {
     font-size: 13px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
 
   .playerSinger {
@@ -457,20 +492,10 @@
 
   .playerCenter {
     width: 100%;
-    flex-direction: column;
-    gap: 6px;
-    align-items: center;
-  }
-
-  /* Progress bar row */
-  .progressWrap {
-    width: 100%;
-    max-width: 100%;
-    order: -1;
     gap: 6px;
   }
 
-  /* Make progress bar taller and easier to touch */
+  /* Progress bar taller + easier to touch */
   .progressBar {
     height: 6px;
     touch-action: none;
@@ -480,27 +505,17 @@
     height: 6px;
   }
 
-  /* Make progress thumb always visible on mobile */
+  /* Progress thumb always visible on mobile */
   .progressThumb {
     opacity: 1;
     width: 14px;
     height: 14px;
   }
 
-  /* Controls row */
-  .playerCenter > .controlBtn,
-  .playerCenter > .playBtn {
-    display: inline-flex;
-  }
-
   .controlBtnRow {
-    display: flex;
-    align-items: center;
     gap: 16px;
-    justify-content: center;
   }
 
-  /* Volume row */
   .playerRight {
     width: 100%;
     justify-content: center;
