@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { auth, db, googleProvider } from '@/lib/firebase'
+import { auth, db, googleProvider } from '../lib/firebase'
 import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth'
 import {
   doc, setDoc, getDoc, updateDoc, arrayUnion, arrayRemove,
