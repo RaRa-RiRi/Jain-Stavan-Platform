@@ -6,7 +6,6 @@
   overflow: hidden;
 }
 
-/* ── Hidden YT player — must be 1px not 0, or Chrome blocks autoplay ── */
 .ytPlayerHidden {
   position: fixed;
   bottom: -2px;
@@ -74,7 +73,7 @@
 .categoryItem:hover { color: #fff; }
 .categoryItem.active { color: #ff6b35; background: #1a1a1a; font-weight: 600; }
 
-/* ── Auth Section ── */
+/* ── Auth ── */
 .authSection {
   margin-top: auto;
   padding-top: 16px;
@@ -98,37 +97,11 @@
 }
 .signInBtn:hover { background: #f0f0f0; }
 
-.userInfo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.userAvatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  object-fit: cover;
-  flex-shrink: 0;
-  cursor: pointer;
-}
+.userInfo { display: flex; align-items: center; gap: 10px; }
+.userAvatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex-shrink: 0; cursor: pointer; }
 .userDetails { flex: 1; min-width: 0; }
-.userName {
-  font-size: 13px;
-  font-weight: 600;
-  color: #fff;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.signOutBtn {
-  background: none;
-  border: none;
-  color: #b3b3b3;
-  font-size: 11px;
-  cursor: pointer;
-  padding: 0;
-  transition: color 0.2s;
-}
+.userName { font-size: 13px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.signOutBtn { background: none; border: none; color: #b3b3b3; font-size: 11px; cursor: pointer; padding: 0; transition: color 0.2s; }
 .signOutBtn:hover { color: #ff4444; }
 
 /* ── Main ── */
@@ -168,6 +141,34 @@
 
 .mobileAuth { display: none; }
 
+/* ── Category Pills ── */
+.categoryPills {
+  display: flex;
+  gap: 8px;
+  padding: 16px 32px 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  flex-shrink: 0;
+}
+.categoryPills::-webkit-scrollbar { display: none; }
+
+.pill {
+  background: #242424;
+  border: none;
+  color: #b3b3b3;
+  border-radius: 20px;
+  padding: 7px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.pill:hover { background: #333; color: #fff; }
+.pillActive { background: #ff6b35 !important; color: #fff !important; font-weight: 700; }
+
+/* ── Content ── */
 .content { padding: 24px 32px; flex: 1; }
 .sectionTitle { font-size: 24px; font-weight: 700; margin-bottom: 20px; }
 
@@ -187,16 +188,11 @@
 .songCard.playing .songNum { color: #ff6b35; }
 
 .songThumb {
-  width: 40px;
-  height: 40px;
+  width: 40px; height: 40px;
   background: #282828;
   border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  flex-shrink: 0;
-  overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0; overflow: hidden;
 }
 .thumbImg { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; }
 
@@ -205,69 +201,35 @@
 .songCard.playing .songTitle { color: #ff6b35; }
 .songSinger { font-size: 12px; color: #b3b3b3; margin-top: 2px; }
 
-.songCategory {
-  font-size: 11px;
-  color: #b3b3b3;
-  background: #282828;
-  padding: 3px 8px;
-  border-radius: 12px;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
 .likeBtn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 16px;
-  padding: 4px;
-  opacity: 0.4;
-  transition: opacity 0.2s, transform 0.1s;
-  flex-shrink: 0;
+  background: none; border: none; cursor: pointer;
+  font-size: 16px; padding: 4px;
+  opacity: 0.3; transition: opacity 0.2s, transform 0.1s; flex-shrink: 0;
 }
 .songCard:hover .likeBtn { opacity: 1; }
 .likeBtn.liked { opacity: 1; }
 .likeBtn:active { transform: scale(1.3); }
 
 .addBtn {
-  background: none;
-  border: 1px solid #535353;
-  color: #b3b3b3;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  cursor: pointer;
-  font-size: 18px;
-  line-height: 1;
-  transition: all 0.2s;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  background: none; border: 1px solid #535353; color: #b3b3b3;
+  width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
+  font-size: 18px; line-height: 1; transition: all 0.2s; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
 }
 .addBtn:hover { border-color: #fff; color: #fff; }
 .addBtn.inPlaylist { border-color: #ff6b35; color: #ff6b35; font-size: 13px; }
 
 .removeBtn {
-  background: none;
-  border: none;
-  color: #b3b3b3;
-  cursor: pointer;
-  font-size: 16px;
-  padding: 4px 8px;
-  transition: color 0.2s;
-  flex-shrink: 0;
+  background: none; border: none; color: #b3b3b3;
+  cursor: pointer; font-size: 16px; padding: 4px 8px;
+  transition: color 0.2s; flex-shrink: 0;
 }
 .removeBtn:hover { color: #ff4444; }
 
 .badge {
-  background: #ff6b35;
-  color: #000;
-  font-size: 10px;
-  font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 10px;
-  margin-left: 4px;
+  background: #ff6b35; color: #000;
+  font-size: 10px; font-weight: 700;
+  padding: 2px 6px; border-radius: 10px; margin-left: 4px;
 }
 
 .loadingWrap { display: flex; flex-direction: column; align-items: center; gap: 16px; margin-top: 60px; color: #b3b3b3; }
@@ -289,61 +251,31 @@
   gap: 16px;
 }
 
-.playerLeft {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-  overflow: hidden;
-}
+.playerLeft { display: flex; align-items: center; gap: 12px; min-width: 0; overflow: hidden; }
 
 .playerThumb {
-  width: 52px;
-  height: 52px;
-  background: #282828;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 22px;
-  flex-shrink: 0;
-  overflow: hidden;
+  width: 52px; height: 52px; background: #282828; border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; flex-shrink: 0; overflow: hidden;
 }
 
 .playerInfo { flex: 1; min-width: 0; overflow: hidden; }
-
 .marqueeContainer { width: 100%; overflow: hidden; position: relative; }
-
 .playerTitle { font-size: 14px; font-weight: 500; white-space: nowrap; display: block; }
 .playerSinger { font-size: 12px; color: #b3b3b3; margin-top: 3px; white-space: nowrap; display: block; }
 
-/* Marquee: pause 3s → scroll left → pause 3s → instant jump back */
 @keyframes marquee {
   0%   { transform: translateX(0); }
   20%  { transform: translateX(0); }
   80%  { transform: translateX(var(--scroll-px, -100px)); }
   100% { transform: translateX(var(--scroll-px, -100px)); }
 }
-.marqueeScroll {
-  display: inline-block;
-  padding-right: 24px;
-  animation: marquee 7s linear infinite;
-  animation-direction: normal;
-}
+.marqueeScroll { display: inline-block; padding-right: 24px; animation: marquee 7s linear infinite; }
 
-.playerLikeBtn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 18px;
-  padding: 4px;
-  flex-shrink: 0;
-  transition: transform 0.1s;
-}
+.playerLikeBtn { background: none; border: none; cursor: pointer; font-size: 18px; padding: 4px; flex-shrink: 0; transition: transform 0.1s; }
 .playerLikeBtn:active { transform: scale(1.3); }
 
 .playerCenter { display: flex; flex-direction: column; align-items: center; gap: 6px; }
-
 .controlBtnRow { display: flex; align-items: center; gap: 8px; justify-content: center; }
 
 .controlBtn { background: none; border: none; color: #b3b3b3; cursor: pointer; font-size: 20px; transition: color 0.2s; padding: 4px; }
@@ -351,19 +283,10 @@
 .activeControl { color: #ff6b35 !important; }
 
 .playBtn {
-  background: #fff;
-  border: none;
-  color: #000;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  cursor: pointer;
-  font-size: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 0.1s;
-  flex-shrink: 0;
+  background: #fff; border: none; color: #000;
+  width: 40px; height: 40px; border-radius: 50%; cursor: pointer;
+  font-size: 16px; display: flex; align-items: center; justify-content: center;
+  transition: transform 0.1s; flex-shrink: 0;
 }
 .playBtn:hover { transform: scale(1.06); }
 
@@ -397,40 +320,31 @@
   }
 
   .sidebar { display: none; }
-
   .main { grid-row: 1 / 2; grid-column: 1; overflow-y: auto; min-height: 0; }
-
   .topBar { padding: 12px 16px 0; }
 
   .mobileAuth { display: flex; align-items: center; flex-shrink: 0; }
   .signInBtnMobile {
-    background: #ff6b35;
-    color: #fff;
-    border: none;
-    border-radius: 16px;
-    padding: 7px 14px;
-    font-size: 12px;
-    font-weight: 700;
-    cursor: pointer;
-    white-space: nowrap;
+    background: #ff6b35; color: #fff; border: none;
+    border-radius: 16px; padding: 7px 14px;
+    font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap;
   }
 
   .searchInput { max-width: 100%; font-size: 16px; padding: 10px 16px; }
+
+  .categoryPills { padding: 12px 16px 0; gap: 6px; }
+  .pill { font-size: 12px; padding: 6px 12px; }
 
   .content { padding: 12px 16px 20px; }
   .sectionTitle { font-size: 18px; margin-bottom: 12px; }
 
   .songCard { padding: 10px 8px; gap: 10px; }
-  .songCategory { display: none; }
   .songNum { display: none; }
 
   .player {
-    grid-row: 2 / 3;
-    grid-column: 1;
+    grid-row: 2 / 3; grid-column: 1;
     grid-template-columns: 1fr;
-    height: auto;
-    padding: 10px 16px 6px;
-    gap: 6px;
+    height: auto; padding: 10px 16px 6px; gap: 6px;
     border-top: 1px solid #333;
   }
 
@@ -449,28 +363,16 @@
 
   .bottomNav {
     display: flex;
-    grid-row: 3 / 4;
-    grid-column: 1;
-    background: #000;
-    border-top: 1px solid #282828;
-    justify-content: space-around;
-    align-items: center;
-    padding: 8px 0 16px;
-    z-index: 200;
+    grid-row: 3 / 4; grid-column: 1;
+    background: #000; border-top: 1px solid #282828;
+    justify-content: space-around; align-items: center;
+    padding: 8px 0 16px; z-index: 200;
   }
 
   .bottomNavItem {
-    background: none;
-    border: none;
-    color: #b3b3b3;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 3px;
-    cursor: pointer;
-    font-size: 9px;
-    font-weight: 600;
-    padding: 4px 8px;
+    background: none; border: none; color: #b3b3b3;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    cursor: pointer; font-size: 9px; font-weight: 600; padding: 4px 8px;
     transition: color 0.2s;
   }
   .bottomNavItem.active { color: #ff6b35; }
