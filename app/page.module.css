@@ -1,19 +1,14 @@
 .container {
   display: grid;
-  grid-template-columns: 240px 1fr;
+  grid-template-columns: 260px 1fr;
   grid-template-rows: 1fr 100px;
   height: 100vh;
   overflow: hidden;
 }
 
 .ytPlayerHidden {
-  position: fixed;
-  bottom: -2px;
-  left: -2px;
-  width: 1px;
-  height: 1px;
-  pointer-events: none;
-  opacity: 0;
+  position: fixed; bottom: -2px; left: -2px;
+  width: 1px; height: 1px; pointer-events: none; opacity: 0;
 }
 
 /* ── Sidebar ── */
@@ -23,7 +18,7 @@
   padding: 24px 16px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
   overflow-y: auto;
 }
 
@@ -33,154 +28,159 @@
 .nav { display: flex; flex-direction: column; gap: 4px; }
 
 .navItem {
-  background: none;
-  border: none;
-  color: #b3b3b3;
-  text-align: left;
-  padding: 10px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 600;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  gap: 4px;
+  background: none; border: none; color: #b3b3b3;
+  text-align: left; padding: 10px 12px; border-radius: 6px;
+  cursor: pointer; font-size: 14px; font-weight: 600;
+  transition: all 0.2s; display: flex; align-items: center; gap: 4px;
 }
 .navItem:hover, .navItem.active { background: #1a1a1a; color: #fff; }
 
+/* Queue indicator in sidebar */
+.queueIndicator {
+  background: #1a1a1a;
+  border-left: 3px solid #ff6b35;
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: #b3b3b3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.queueIndicator button {
+  background: none; border: none; color: #ff6b35;
+  font-size: 11px; cursor: pointer; font-weight: 600;
+}
+
 .sectionLabel {
-  font-size: 11px;
-  font-weight: 700;
-  color: #535353;
-  letter-spacing: 1px;
-  margin-bottom: 8px;
+  font-size: 11px; font-weight: 700; color: #535353;
+  letter-spacing: 1px; margin-bottom: 6px;
 }
 
 .categories { display: flex; flex-direction: column; gap: 2px; }
 
-.categoryItem {
-  background: none;
-  border: none;
-  color: #b3b3b3;
-  text-align: left;
-  padding: 8px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 13px;
+/* Playlist header row */
+.plHeader { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.newPlIconBtn {
+  background: none; border: 1px solid #535353; color: #b3b3b3;
+  width: 22px; height: 22px; border-radius: 50%; cursor: pointer;
+  font-size: 14px; display: flex; align-items: center; justify-content: center;
   transition: all 0.2s;
+}
+.newPlIconBtn:hover { border-color: #ff6b35; color: #ff6b35; }
+
+/* New playlist input row */
+.newPlRow { display: flex; gap: 6px; margin-bottom: 8px; }
+.newPlInput {
+  flex: 1; background: #242424; border: 1px solid #535353;
+  border-radius: 6px; padding: 6px 10px; color: #fff; font-size: 12px; outline: none;
+}
+.newPlInput:focus { border-color: #ff6b35; }
+.newPlSave {
+  background: #ff6b35; border: none; color: #000;
+  border-radius: 6px; padding: 6px 10px; font-size: 12px;
+  font-weight: 700; cursor: pointer;
+}
+.newPlCancel {
+  background: none; border: none; color: #b3b3b3;
+  cursor: pointer; font-size: 14px;
+}
+.newPlBtn {
+  background: none; border: 1px dashed #535353; color: #b3b3b3;
+  border-radius: 6px; padding: 8px; font-size: 12px; cursor: pointer;
+  width: 100%; text-align: center; transition: all 0.2s; margin-top: 6px;
+}
+.newPlBtn:hover { border-color: #ff6b35; color: #ff6b35; }
+
+/* Playlist items in sidebar */
+.plItem {
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 10px; border-radius: 6px; cursor: pointer;
+  transition: background 0.15s;
+}
+.plItem:hover, .plItem.active { background: #1a1a1a; }
+.plItem.active .plItemName { color: #ff6b35; }
+.plItemName { flex: 1; font-size: 13px; color: #b3b3b3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.plItem.active .plItemName { color: #ff6b35; }
+.plItemCount { font-size: 11px; color: #535353; flex-shrink: 0; }
+.plDeleteBtn {
+  background: none; border: none; color: #535353;
+  cursor: pointer; font-size: 12px; padding: 2px 4px;
+  opacity: 0; transition: opacity 0.2s, color 0.2s; flex-shrink: 0;
+}
+.plItem:hover .plDeleteBtn { opacity: 1; }
+.plDeleteBtn:hover { color: #ff4444; }
+
+.emptyPlMsg { font-size: 12px; color: #535353; padding: 4px 10px; }
+
+.categoryItem {
+  background: none; border: none; color: #b3b3b3;
+  text-align: left; padding: 8px 12px; border-radius: 6px;
+  cursor: pointer; font-size: 13px; transition: all 0.2s;
 }
 .categoryItem:hover { color: #fff; }
 .categoryItem.active { color: #ff6b35; background: #1a1a1a; font-weight: 600; }
 
-/* ── Auth ── */
-.authSection {
-  margin-top: auto;
-  padding-top: 16px;
-  border-top: 1px solid #282828;
-}
-
+/* Auth */
+.authSection { margin-top: auto; padding-top: 16px; border-top: 1px solid #282828; }
 .signInBtn {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: #fff;
-  color: #111;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 14px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
+  width: 100%; display: flex; align-items: center; gap: 10px;
+  background: #fff; color: #111; border: none; border-radius: 8px;
+  padding: 10px 14px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.2s;
 }
 .signInBtn:hover { background: #f0f0f0; }
-
 .userInfo { display: flex; align-items: center; gap: 10px; }
 .userAvatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex-shrink: 0; cursor: pointer; }
 .userDetails { flex: 1; min-width: 0; }
 .userName { font-size: 13px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.signOutBtn { background: none; border: none; color: #b3b3b3; font-size: 11px; cursor: pointer; padding: 0; transition: color 0.2s; }
+.signOutBtn { background: none; border: none; color: #b3b3b3; font-size: 11px; cursor: pointer; padding: 0; }
 .signOutBtn:hover { color: #ff4444; }
 
 /* ── Main ── */
 .main {
   grid-row: 1 / 2;
   background: linear-gradient(180deg, #1a0a00 0%, #121212 300px);
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
+  overflow-y: auto; display: flex; flex-direction: column;
 }
 
 .topBar {
-  padding: 20px 32px 0;
-  position: sticky;
-  top: 0;
+  padding: 20px 32px 0; position: sticky; top: 0;
   background: linear-gradient(180deg, #1a0a00 0%, transparent 100%);
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  gap: 12px;
+  z-index: 10; display: flex; align-items: center; gap: 12px;
 }
 
 .searchInput {
-  flex: 1;
-  max-width: 480px;
-  background: #242424;
-  border: none;
-  border-radius: 24px;
-  padding: 12px 20px;
-  color: #fff;
-  font-size: 14px;
-  outline: none;
-  transition: background 0.2s;
+  flex: 1; max-width: 480px; background: #242424; border: none;
+  border-radius: 24px; padding: 12px 20px; color: #fff; font-size: 14px;
+  outline: none; transition: background 0.2s;
 }
 .searchInput:focus { background: #2a2a2a; outline: 2px solid #ff6b35; }
 .searchInput::placeholder { color: #727272; }
-
 .mobileAuth { display: none; }
 
-/* ── Category Pills ── */
+/* Category pills */
 .categoryPills {
-  display: flex;
-  gap: 8px;
-  padding: 16px 32px 0;
-  overflow-x: auto;
-  scrollbar-width: none;
-  flex-shrink: 0;
+  display: flex; gap: 8px; padding: 16px 32px 0;
+  overflow-x: auto; scrollbar-width: none; flex-shrink: 0;
 }
 .categoryPills::-webkit-scrollbar { display: none; }
-
 .pill {
-  background: #242424;
-  border: none;
-  color: #b3b3b3;
-  border-radius: 20px;
-  padding: 7px 16px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.2s;
-  flex-shrink: 0;
+  background: #242424; border: none; color: #b3b3b3;
+  border-radius: 20px; padding: 7px 16px; font-size: 13px;
+  font-weight: 500; cursor: pointer; white-space: nowrap;
+  transition: all 0.2s; flex-shrink: 0;
 }
 .pill:hover { background: #333; color: #fff; }
 .pillActive { background: #ff6b35 !important; color: #fff !important; font-weight: 700; }
 
-/* ── Content ── */
 .content { padding: 24px 32px; flex: 1; }
 .sectionTitle { font-size: 24px; font-weight: 700; margin-bottom: 20px; }
 
 /* ── Song Cards ── */
 .songCard {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 16px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.15s;
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 16px; border-radius: 6px; cursor: pointer; transition: background 0.15s;
 }
 .songCard:hover, .songCard.playing { background: #1a1a1a; }
 
@@ -188,9 +188,7 @@
 .songCard.playing .songNum { color: #ff6b35; }
 
 .songThumb {
-  width: 40px; height: 40px;
-  background: #282828;
-  border-radius: 4px;
+  width: 40px; height: 40px; background: #282828; border-radius: 4px;
   display: flex; align-items: center; justify-content: center;
   font-size: 18px; flex-shrink: 0; overflow: hidden;
 }
@@ -201,35 +199,32 @@
 .songCard.playing .songTitle { color: #ff6b35; }
 .songSinger { font-size: 12px; color: #b3b3b3; margin-top: 2px; }
 
-.likeBtn {
-  background: none; border: none; cursor: pointer;
-  font-size: 16px; padding: 4px;
-  opacity: 0.3; transition: opacity 0.2s, transform 0.1s; flex-shrink: 0;
+/* Song action buttons group */
+.songActions {
+  display: flex; align-items: center; gap: 2px;
+  opacity: 0; transition: opacity 0.2s; flex-shrink: 0;
 }
-.songCard:hover .likeBtn { opacity: 1; }
-.likeBtn.liked { opacity: 1; }
-.likeBtn:active { transform: scale(1.3); }
+.songCard:hover .songActions { opacity: 1; }
 
-.addBtn {
-  background: none; border: 1px solid #535353; color: #b3b3b3;
-  width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
-  font-size: 18px; line-height: 1; transition: all 0.2s; flex-shrink: 0;
+.actionBtn {
+  background: none; border: none; cursor: pointer;
+  font-size: 15px; padding: 5px 6px; border-radius: 4px;
+  color: #b3b3b3; transition: color 0.15s, background 0.15s;
   display: flex; align-items: center; justify-content: center;
 }
-.addBtn:hover { border-color: #fff; color: #fff; }
-.addBtn.inPlaylist { border-color: #ff6b35; color: #ff6b35; font-size: 13px; }
-
-.removeBtn {
-  background: none; border: none; color: #b3b3b3;
-  cursor: pointer; font-size: 16px; padding: 4px 8px;
-  transition: color 0.2s; flex-shrink: 0;
-}
-.removeBtn:hover { color: #ff4444; }
+.actionBtn:hover { color: #fff; background: #282828; }
+.actionBtn.liked { color: #ff4444; opacity: 1; }
+.actionBtn.removeAction:hover { color: #ff4444; }
 
 .badge {
-  background: #ff6b35; color: #000;
-  font-size: 10px; font-weight: 700;
+  background: #ff6b35; color: #000; font-size: 10px; font-weight: 700;
   padding: 2px 6px; border-radius: 10px; margin-left: 4px;
+}
+
+/* Queue badge in player */
+.queueBadge {
+  background: #ff6b35; color: #000; font-size: 10px; font-weight: 700;
+  padding: 2px 6px; border-radius: 10px; flex-shrink: 0;
 }
 
 .loadingWrap { display: flex; flex-direction: column; align-items: center; gap: 16px; margin-top: 60px; color: #b3b3b3; }
@@ -237,28 +232,62 @@
 @keyframes spin { to { transform: rotate(360deg); } }
 .emptyMsg { color: #b3b3b3; font-size: 14px; margin-top: 40px; text-align: center; }
 
+/* ── Modals ── */
+.modalOverlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000; padding: 20px;
+}
+.modal {
+  background: #282828; border-radius: 12px; padding: 24px;
+  width: 100%; max-width: 360px; position: relative;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.modalClose {
+  position: absolute; top: 14px; right: 14px;
+  background: none; border: none; color: #b3b3b3;
+  font-size: 16px; cursor: pointer;
+}
+.modalClose:hover { color: #fff; }
+.modalThumb { width: 100%; border-radius: 8px; object-fit: cover; max-height: 180px; }
+.modalTitle { font-size: 16px; font-weight: 700; color: #fff; }
+.modalSinger { font-size: 13px; color: #b3b3b3; margin-top: -6px; }
+.modalActions { display: flex; gap: 10px; margin-top: 4px; }
+.modalYtBtn {
+  flex: 1; background: #ff0000; color: #fff; border: none;
+  border-radius: 8px; padding: 10px; font-size: 13px; font-weight: 600;
+  cursor: pointer; text-align: center; text-decoration: none; display: flex; align-items: center; justify-content: center;
+}
+.modalPlayBtn {
+  flex: 1; background: #ff6b35; color: #fff; border: none;
+  border-radius: 8px; padding: 10px; font-size: 13px; font-weight: 600; cursor: pointer;
+}
+
+/* Playlist picker in modal */
+.plList { display: flex; flex-direction: column; gap: 6px; max-height: 240px; overflow-y: auto; }
+.plPickBtn {
+  background: #1a1a1a; border: none; color: #fff; border-radius: 8px;
+  padding: 10px 14px; font-size: 13px; cursor: pointer; text-align: left;
+  display: flex; justify-content: space-between; align-items: center;
+  transition: background 0.15s;
+}
+.plPickBtn:hover { background: #333; }
+.plCount { font-size: 11px; color: #b3b3b3; }
+
 /* ── Player ── */
 .player {
-  grid-column: 1 / -1;
-  grid-row: 2 / 3;
-  background: #181818;
-  border-top: 1px solid #282828;
-  display: grid;
-  grid-template-columns: 280px 1fr 200px;
-  align-items: center;
-  padding: 0 24px;
-  z-index: 100;
-  gap: 16px;
+  grid-column: 1 / -1; grid-row: 2 / 3;
+  background: #181818; border-top: 1px solid #282828;
+  display: grid; grid-template-columns: 280px 1fr 200px;
+  align-items: center; padding: 0 24px; z-index: 100; gap: 16px;
 }
 
 .playerLeft { display: flex; align-items: center; gap: 12px; min-width: 0; overflow: hidden; }
-
 .playerThumb {
   width: 52px; height: 52px; background: #282828; border-radius: 4px;
   display: flex; align-items: center; justify-content: center;
   font-size: 22px; flex-shrink: 0; overflow: hidden;
 }
-
 .playerInfo { flex: 1; min-width: 0; overflow: hidden; }
 .marqueeContainer { width: 100%; overflow: hidden; position: relative; }
 .playerTitle { font-size: 14px; font-weight: 500; white-space: nowrap; display: block; }
@@ -274,25 +303,22 @@
 
 .playerLikeBtn { background: none; border: none; cursor: pointer; font-size: 18px; padding: 4px; flex-shrink: 0; transition: transform 0.1s; }
 .playerLikeBtn:active { transform: scale(1.3); }
+.playerLikeBtn.liked { }
 
 .playerCenter { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .controlBtnRow { display: flex; align-items: center; gap: 8px; justify-content: center; }
-
 .controlBtn { background: none; border: none; color: #b3b3b3; cursor: pointer; font-size: 20px; transition: color 0.2s; padding: 4px; }
 .controlBtn:hover { color: #fff; }
 .activeControl { color: #ff6b35 !important; }
-
 .playBtn {
-  background: #fff; border: none; color: #000;
-  width: 40px; height: 40px; border-radius: 50%; cursor: pointer;
-  font-size: 16px; display: flex; align-items: center; justify-content: center;
-  transition: transform 0.1s; flex-shrink: 0;
+  background: #fff; border: none; color: #000; width: 40px; height: 40px;
+  border-radius: 50%; cursor: pointer; font-size: 16px;
+  display: flex; align-items: center; justify-content: center; transition: transform 0.1s; flex-shrink: 0;
 }
 .playBtn:hover { transform: scale(1.06); }
 
 .progressWrap { display: flex; align-items: center; gap: 8px; width: 100%; }
 .timeLabel { font-size: 11px; color: #b3b3b3; white-space: nowrap; min-width: 32px; text-align: center; }
-
 .progressBar { flex: 1; height: 4px; background: #535353; border-radius: 2px; cursor: pointer; position: relative; transition: height 0.1s; }
 .progressBar:hover { height: 6px; }
 .progressFill { height: 100%; background: #ff6b35; border-radius: 2px; pointer-events: none; }
@@ -307,73 +333,59 @@
 /* ── Bottom Nav ── */
 .bottomNav { display: none; }
 
-/* ════════════════════════════
-   MOBILE (max 768px)
-════════════════════════════ */
+/* ════════════════════════
+   MOBILE
+════════════════════════ */
 @media (max-width: 768px) {
   .container {
     grid-template-columns: 1fr;
     grid-template-rows: 1fr auto auto;
-    height: 100vh;
-    height: 100dvh;
-    overflow: hidden;
+    height: 100vh; height: 100dvh; overflow: hidden;
   }
-
   .sidebar { display: none; }
   .main { grid-row: 1 / 2; grid-column: 1; overflow-y: auto; min-height: 0; }
   .topBar { padding: 12px 16px 0; }
-
   .mobileAuth { display: flex; align-items: center; flex-shrink: 0; }
   .signInBtnMobile {
-    background: #ff6b35; color: #fff; border: none;
-    border-radius: 16px; padding: 7px 14px;
-    font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap;
+    background: #ff6b35; color: #fff; border: none; border-radius: 16px;
+    padding: 7px 14px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap;
   }
-
   .searchInput { max-width: 100%; font-size: 16px; padding: 10px 16px; }
-
   .categoryPills { padding: 12px 16px 0; gap: 6px; }
   .pill { font-size: 12px; padding: 6px 12px; }
-
   .content { padding: 12px 16px 20px; }
   .sectionTitle { font-size: 18px; margin-bottom: 12px; }
-
   .songCard { padding: 10px 8px; gap: 10px; }
   .songNum { display: none; }
+  .songActions { opacity: 1; }
+  .actionBtn { padding: 4px 5px; font-size: 14px; }
 
   .player {
     grid-row: 2 / 3; grid-column: 1;
-    grid-template-columns: 1fr;
-    height: auto; padding: 10px 16px 6px; gap: 6px;
-    border-top: 1px solid #333;
+    grid-template-columns: 1fr; height: auto;
+    padding: 10px 16px 6px; gap: 6px; border-top: 1px solid #333;
   }
-
   .playerLeft { width: 100%; }
   .playerTitle { font-size: 13px; }
   .playerSinger { font-size: 11px; }
   .playerCenter { width: 100%; gap: 6px; }
-
   .progressBar { height: 6px; touch-action: none; }
   .progressBar:hover { height: 6px; }
   .progressThumb { opacity: 1; width: 14px; height: 14px; }
   .controlBtnRow { gap: 16px; }
-
   .playerRight { width: 100%; justify-content: center; gap: 10px; }
   .volumeSlider { width: 150px; touch-action: none; }
 
   .bottomNav {
-    display: flex;
-    grid-row: 3 / 4; grid-column: 1;
+    display: flex; grid-row: 3 / 4; grid-column: 1;
     background: #000; border-top: 1px solid #282828;
     justify-content: space-around; align-items: center;
     padding: 8px 0 16px; z-index: 200;
   }
-
   .bottomNavItem {
     background: none; border: none; color: #b3b3b3;
     display: flex; flex-direction: column; align-items: center; gap: 3px;
-    cursor: pointer; font-size: 9px; font-weight: 600; padding: 4px 8px;
-    transition: color 0.2s;
+    cursor: pointer; font-size: 9px; font-weight: 600; padding: 4px 8px; transition: color 0.2s;
   }
   .bottomNavItem.active { color: #ff6b35; }
   .bottomNavIcon { font-size: 20px; }

@@ -1,25 +1,23 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { auth, db, googleProvider } from '../lib/firebase'
+import { auth, db, googleProvider } from '@/lib/firebase'
 import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth'
 import {
   doc, setDoc, getDoc, updateDoc, arrayUnion, arrayRemove,
-  serverTimestamp, collection, query, where, getDocs
+  serverTimestamp, collection, query, where, getDocs, addDoc, deleteDoc
 } from 'firebase/firestore'
 import styles from './page.module.css'
 
-// ── Categories ────────────────────────────────────────────────────────────────
 const CATEGORIES = [
-  { id: 'neminath',   label: '🏔️ Neminath & Girnar',          firestoreKey: 'neminath' },
-  { id: 'aadinath',   label: '⛰️ Aadinath & Shetrunjay',      firestoreKey: 'aadinath' },
-  { id: 'parshwanath',label: '🐍 Parshwanath & Shankheshwar', firestoreKey: 'parshwanath' },
-  { id: 'mahavir',    label: '🦁 Mahavir Swami',               firestoreKey: 'mahavir' },
-  { id: 'navkar',     label: '🕉️ Navkar Mantra',               firestoreKey: 'navkar' },
-  { id: 'diksha',     label: '🎊 Diksha',                      firestoreKey: 'diksha' },
-  { id: 'general',    label: '🎵 General Stavan',              firestoreKey: 'general' },
+  { id: 'neminath',    label: 'Neminath & Girnar',          firestoreKey: 'neminath' },
+  { id: 'aadinath',    label: 'Aadinath & Shetrunjay',      firestoreKey: 'aadinath' },
+  { id: 'parshwanath', label: 'Parshwanath & Shankheshwar', firestoreKey: 'parshwanath' },
+  { id: 'mahavir',     label: 'Mahavir Swami',               firestoreKey: 'mahavir' },
+  { id: 'navkar',      label: 'Navkar Mantra',               firestoreKey: 'navkar' },
+  { id: 'diksha',      label: 'Diksha',                      firestoreKey: 'diksha' },
+  { id: 'general',     label: 'General Stavan',              firestoreKey: 'general' },
 ]
 
-// ── Home featured (shown on landing) ─────────────────────────────────────────
 const HOME_SONGS = [
   { id: '1', title: 'Navkar Mantra', singer: 'Hemina Shah', videoId: '1H-IU9lN9cI', category: 'navkar', thumbnail: 'https://img.youtube.com/vi/1H-IU9lN9cI/mqdefault.jpg' },
   { id: '2', title: 'Nemras - Theme Song', singer: 'Paras Gada', videoId: '1I-9P70dEUo', category: 'neminath', thumbnail: 'https://img.youtube.com/vi/1I-9P70dEUo/mqdefault.jpg' },
@@ -30,6 +28,7 @@ const HOME_SONGS = [
 ]
 
 const MAX_RECENT = 30
+
 function formatTime(sec) {
   if (!sec || isNaN(sec)) return '0:00'
   const m = Math.floor(sec / 60), s = Math.floor(sec % 60)
@@ -89,11 +88,12 @@ async function getUserDoc(uid) {
   const ref = doc(db, 'users', uid)
   const snap = await getDoc(ref)
   if (!snap.exists()) {
-    await setDoc(ref, { playlist: [], likedSongs: [], recentlyPlayed: [], createdAt: serverTimestamp() })
-    return { playlist: [], likedSongs: [], recentlyPlayed: [] }
+    await setDoc(ref, { likedSongs: [], recentlyPlayed: [], createdAt: serverTimestamp() })
+    return { likedSongs: [], recentlyPlayed: [] }
   }
   return snap.data()
 }
+
 async function saveRecentlyPlayed(uid, song) {
   const ref = doc(db, 'users', uid)
   const snap = await getDoc(ref)
@@ -103,19 +103,60 @@ async function saveRecentlyPlayed(uid, song) {
   await updateDoc(ref, { recentlyPlayed: updated })
   return updated
 }
+
 async function toggleLikeInDB(uid, song, isLiked) {
   const ref = doc(db, 'users', uid)
   if (isLiked) await updateDoc(ref, { likedSongs: arrayRemove(song) })
   else await updateDoc(ref, { likedSongs: arrayUnion(song) })
 }
-async function savePlaylistToDB(uid, pl) {
-  await updateDoc(doc(db, 'users', uid), { playlist: pl })
+
+// Multiple playlists — stored as subcollection: users/{uid}/playlists/{playlistId}
+async function fetchUserPlaylists(uid) {
+  const snap = await getDocs(collection(db, 'users', uid, 'playlists'))
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+}
+
+async function createPlaylist(uid, name) {
+  const ref = await addDoc(collection(db, 'users', uid, 'playlists'), {
+    name, songs: [], createdAt: serverTimestamp()
+  })
+  return { id: ref.id, name, songs: [] }
+}
+
+async function deletePlaylist(uid, playlistId) {
+  await deleteDoc(doc(db, 'users', uid, 'playlists', playlistId))
+}
+
+async function addSongToPlaylist(uid, playlistId, song) {
+  const ref = doc(db, 'users', uid, 'playlists', playlistId)
+  const snap = await getDoc(ref)
+  const songs = snap.data()?.songs || []
+  if (songs.find(s => s.videoId === song.videoId)) return false
+  await updateDoc(ref, { songs: arrayUnion(song) })
+  return true
+}
+
+async function removeSongFromPlaylist(uid, playlistId, song) {
+  const ref = doc(db, 'users', uid, 'playlists', playlistId)
+  await updateDoc(ref, { songs: arrayRemove(song) })
+}
+
+// oEmbed — fetch real title/singer for a video (free, no API key)
+async function fetchOEmbed(videoId) {
+  try {
+    const res = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`)
+    if (!res.ok) return null
+    const data = await res.json()
+    return { title: data.title, singer: data.author_name }
+  } catch { return null }
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function Home() {
   const [user, setUser] = useState(null)
   const [authLoading, setAuthLoading] = useState(true)
+
+  // Player
   const [currentSong, setCurrentSong] = useState(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [volume, setVolume] = useState(80)
@@ -124,47 +165,68 @@ export default function Home() {
   const [progress, setProgress] = useState(0)
   const [duration, setDuration] = useState(0)
   const [currentTime, setCurrentTime] = useState(0)
+  const [queue, setQueue] = useState([]) // songs queued to play next
+
+  // UI
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState([])
   const [isSearching, setIsSearching] = useState(false)
-  const [activeView, setActiveView] = useState('home')       // home | category | playlist | liked | recent
-  const [activeCategory, setActiveCategory] = useState(null) // one of CATEGORIES objects
-  const [categoryCache, setCategoryCache] = useState({})     // { neminath: [songs...] }
+  const [activeView, setActiveView] = useState('home')
+  const [activeCategory, setActiveCategory] = useState(null)
+  const [categoryCache, setCategoryCache] = useState({})
   const [loadingCategory, setLoadingCategory] = useState(false)
-  const [playlist, setPlaylist] = useState([])
+  const [activePlId, setActivePlId] = useState(null) // which playlist is open
+
+  // User data
   const [likedSongs, setLikedSongs] = useState([])
   const [recentlyPlayed, setRecentlyPlayed] = useState([])
+  const [playlists, setPlaylists] = useState([]) // [{id, name, songs:[]}]
+
+  // Modals
+  const [infoSong, setInfoSong] = useState(null)       // song info modal
+  const [infoMeta, setInfoMeta] = useState(null)       // oEmbed data for info modal
+  const [addToPlSong, setAddToPlSong] = useState(null) // "add to playlist" picker
+  const [showNewPl, setShowNewPl] = useState(false)    // new playlist input
+  const [newPlName, setNewPlName] = useState('')
+
   const playerRef = useRef(null)
   const progressInterval = useRef(null)
   const searchTimeout = useRef(null)
 
-  // Auth
+  // ── Auth ───────────────────────────────────────────────────────────────────
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
       setUser(u); setAuthLoading(false)
       if (u) {
         const data = await getUserDoc(u.uid)
-        setPlaylist(data.playlist || [])
         setLikedSongs(data.likedSongs || [])
         setRecentlyPlayed(data.recentlyPlayed || [])
-      } else { setPlaylist([]); setLikedSongs([]); setRecentlyPlayed([]) }
+        const pls = await fetchUserPlaylists(u.uid)
+        setPlaylists(pls)
+      } else {
+        setLikedSongs([]); setRecentlyPlayed([]); setPlaylists([])
+      }
     })
     return unsub
   }, [])
 
-  // Open a category tab — load from Firestore, cache it
+  // ── Open category ──────────────────────────────────────────────────────────
   const openCategory = async (cat) => {
-    setActiveView('category'); setActiveCategory(cat); setSearchQuery('')
+    setActiveView('category'); setActiveCategory(cat); setSearchQuery(''); setActivePlId(null)
     if (categoryCache[cat.firestoreKey]) return
     setLoadingCategory(true)
     const q = query(collection(db, 'songs'), where('category', '==', cat.firestoreKey))
     const snap = await getDocs(q)
-    const songs = snap.docs.map(d => d.data())
-    setCategoryCache(prev => ({ ...prev, [cat.firestoreKey]: songs }))
+    setCategoryCache(prev => ({ ...prev, [cat.firestoreKey]: snap.docs.map(d => d.data()) }))
     setLoadingCategory(false)
   }
 
-  // YouTube API
+  // ── Open a specific playlist ───────────────────────────────────────────────
+  const openPlaylist = (pl) => {
+    setActiveView('playlist'); setActivePlId(pl.id); setSearchQuery(''); setActiveCategory(null)
+  }
+
+  // ── YouTube ────────────────────────────────────────────────────────────────
   useEffect(() => {
     if (window.YT) return
     const tag = document.createElement('script')
@@ -186,8 +248,10 @@ export default function Home() {
 
   const currentList = (() => {
     if (searchQuery.trim().length >= 2) return searchResults
+    if (activeView === 'playlist' && activePlId) {
+      return playlists.find(p => p.id === activePlId)?.songs || []
+    }
     if (activeView === 'category' && activeCategory) return categoryCache[activeCategory.firestoreKey] || []
-    if (activeView === 'playlist') return playlist
     if (activeView === 'liked') return likedSongs
     if (activeView === 'recent') return recentlyPlayed
     return HOME_SONGS
@@ -196,10 +260,8 @@ export default function Home() {
   const playSong = useCallback((song) => {
     setCurrentSong(song); setIsPlaying(true); setProgress(0); setCurrentTime(0)
     if (user) {
-      saveRecentlyPlayed(user.uid, {
-        id: song.id || song.videoId, title: song.title, singer: song.singer,
-        videoId: song.videoId, category: song.category || 'general', thumbnail: song.thumbnail || null,
-      }).then(u => setRecentlyPlayed(u))
+      const s = { id: song.id || song.videoId, title: song.title, singer: song.singer, videoId: song.videoId, category: song.category || 'general', thumbnail: song.thumbnail || null }
+      saveRecentlyPlayed(user.uid, s).then(u => setRecentlyPlayed(u))
     }
     const tryInit = () => {
       if (!window.YT || !window.YT.Player) { setTimeout(tryInit, 300); return }
@@ -213,8 +275,15 @@ export default function Home() {
           onReady: (e) => { e.target.setVolume(volume); e.target.playVideo(); startProgressTracking() },
           onStateChange: (e) => {
             if (e.data === window.YT.PlayerState.ENDED) {
-              if (repeat) { playerRef.current.seekTo(0); playerRef.current.playVideo() }
-              else setCurrentSong(prev => {
+              if (repeat) { playerRef.current.seekTo(0); playerRef.current.playVideo(); return }
+              // Play from queue first
+              if (queue.length > 0) {
+                const [next, ...rest] = queue
+                setQueue(rest)
+                setTimeout(() => playSong(next), 100)
+                return
+              }
+              setCurrentSong(prev => {
                 const idx = currentList.findIndex(s => s.videoId === prev?.videoId)
                 const next = currentList[(idx + 1) % currentList.length]
                 if (next) setTimeout(() => playSong(next), 100)
@@ -227,7 +296,12 @@ export default function Home() {
       })
     }
     tryInit()
-  }, [volume, repeat, user, currentList])
+  }, [volume, repeat, user, currentList, queue])
+
+  const addToQueue = (song, e) => {
+    e.stopPropagation()
+    setQueue(prev => [...prev, song])
+  }
 
   const togglePlay = () => {
     if (!playerRef.current) return
@@ -235,13 +309,16 @@ export default function Home() {
     else { playerRef.current.playVideo(); startProgressTracking() }
     setIsPlaying(!isPlaying)
   }
+
   useEffect(() => { if (playerRef.current?.setVolume) playerRef.current.setVolume(volume) }, [volume])
 
   const playNext = useCallback(() => {
-    if (!currentSong || !currentList.length) return
+    if (!currentSong) return
+    if (queue.length > 0) { const [next, ...rest] = queue; setQueue(rest); playSong(next); return }
+    if (!currentList.length) return
     if (shuffle) playSong(currentList[Math.floor(Math.random() * currentList.length)])
     else { const idx = currentList.findIndex(s => s.videoId === currentSong.videoId); playSong(currentList[(idx + 1) % currentList.length]) }
-  }, [currentSong, shuffle, currentList, playSong])
+  }, [currentSong, shuffle, currentList, playSong, queue])
 
   const playPrev = useCallback(() => {
     if (!currentSong || !currentList.length) return
@@ -257,7 +334,7 @@ export default function Home() {
     playerRef.current.seekTo(pct * duration, true); setProgress(pct * 100); setCurrentTime(pct * duration)
   }
 
-  // Smart search: Firestore first → YouTube API fallback
+  // ── Smart search ───────────────────────────────────────────────────────────
   useEffect(() => {
     if (searchQuery.trim().length < 2) { setSearchResults([]); return }
     setIsSearching(true)
@@ -265,62 +342,85 @@ export default function Home() {
     searchTimeout.current = setTimeout(async () => {
       try {
         const lower = searchQuery.toLowerCase()
-        // Search all songs in our DB
         const allSnap = await getDocs(collection(db, 'songs'))
-        let localResults = allSnap.docs.map(d => d.data())
+        let local = allSnap.docs.map(d => d.data())
           .filter(s => s.title?.toLowerCase().includes(lower) || s.singer?.toLowerCase().includes(lower))
-
-        // If inside a category, filter to that category
-        if (activeView === 'category' && activeCategory?.firestoreKey) {
-          localResults = localResults.filter(s => s.category === activeCategory.firestoreKey)
-        }
-
-        // If 5+ local results found, skip API
-        if (localResults.length >= 5) { setSearchResults(localResults); setIsSearching(false); return }
-
-        // Fall back to YouTube API for new queries
+        if (activeView === 'category' && activeCategory?.firestoreKey)
+          local = local.filter(s => s.category === activeCategory.firestoreKey)
+        if (local.length >= 5) { setSearchResults(local); setIsSearching(false); return }
         const res = await fetch(`/api/search?q=${encodeURIComponent(searchQuery)}`)
         const data = await res.json()
-        const apiResults = data.results || []
-        const localIds = new Set(localResults.map(s => s.videoId))
-        setSearchResults([...localResults, ...apiResults.filter(s => !localIds.has(s.videoId))])
+        const localIds = new Set(local.map(s => s.videoId))
+        setSearchResults([...local, ...(data.results || []).filter(s => !localIds.has(s.videoId))])
       } catch { setSearchResults([]) }
       finally { setIsSearching(false) }
     }, 600)
     return () => clearTimeout(searchTimeout.current)
   }, [searchQuery, activeView, activeCategory])
 
-  // Playlist
-  const addToPlaylist = async (song, e) => {
-    e.stopPropagation()
-    if (playlist.find(s => s.videoId === song.videoId)) return
-    const newPl = [...playlist, { id: song.id || song.videoId, title: song.title, singer: song.singer, videoId: song.videoId, category: song.category || 'general', thumbnail: song.thumbnail || null }]
-    setPlaylist(newPl); if (user) await savePlaylistToDB(user.uid, newPl)
-  }
-  const removeFromPlaylist = async (videoId, e) => {
-    e.stopPropagation()
-    const newPl = playlist.filter(s => s.videoId !== videoId)
-    setPlaylist(newPl); if (user) await savePlaylistToDB(user.uid, newPl)
-  }
-
-  // Like
+  // ── Like ───────────────────────────────────────────────────────────────────
   const toggleLike = async (song, e) => {
     e.stopPropagation()
     if (!user) { alert('Please sign in to like songs!'); return }
-    const songData = { id: song.id || song.videoId, title: song.title, singer: song.singer, videoId: song.videoId, category: song.category || 'general', thumbnail: song.thumbnail || null }
-    const isLiked = likedSongs.some(s => s.videoId === song.videoId)
-    setLikedSongs(isLiked ? likedSongs.filter(s => s.videoId !== song.videoId) : [...likedSongs, songData])
-    await toggleLikeInDB(user.uid, songData, isLiked)
+    const s = { id: song.id || song.videoId, title: song.title, singer: song.singer, videoId: song.videoId, category: song.category || 'general', thumbnail: song.thumbnail || null }
+    const isLiked = likedSongs.some(l => l.videoId === song.videoId)
+    setLikedSongs(isLiked ? likedSongs.filter(l => l.videoId !== song.videoId) : [...likedSongs, s])
+    await toggleLikeInDB(user.uid, s, isLiked)
   }
 
+  // ── Multiple playlists ─────────────────────────────────────────────────────
+  const handleCreatePlaylist = async () => {
+    if (!newPlName.trim() || !user) return
+    const pl = await createPlaylist(user.uid, newPlName.trim())
+    setPlaylists(prev => [...prev, pl])
+    setNewPlName(''); setShowNewPl(false)
+  }
+
+  const handleDeletePlaylist = async (pl, e) => {
+    e.stopPropagation()
+    if (!user) return
+    await deletePlaylist(user.uid, pl.id)
+    setPlaylists(prev => prev.filter(p => p.id !== pl.id))
+    if (activePlId === pl.id) setActiveView('home')
+  }
+
+  const handleAddToPlaylist = async (playlistId) => {
+    if (!user || !addToPlSong) return
+    const s = { id: addToPlSong.id || addToPlSong.videoId, title: addToPlSong.title, singer: addToPlSong.singer, videoId: addToPlSong.videoId, category: addToPlSong.category || 'general', thumbnail: addToPlSong.thumbnail || null }
+    const added = await addSongToPlaylist(user.uid, playlistId, s)
+    if (added) {
+      setPlaylists(prev => prev.map(p => p.id === playlistId ? { ...p, songs: [...(p.songs || []), s] } : p))
+    }
+    setAddToPlSong(null)
+  }
+
+  const handleRemoveFromPlaylist = async (song, e) => {
+    e.stopPropagation()
+    if (!user || !activePlId) return
+    const s = { id: song.id || song.videoId, title: song.title, singer: song.singer, videoId: song.videoId, category: song.category || 'general', thumbnail: song.thumbnail || null }
+    await removeSongFromPlaylist(user.uid, activePlId, s)
+    setPlaylists(prev => prev.map(p => p.id === activePlId ? { ...p, songs: p.songs.filter(x => x.videoId !== song.videoId) } : p))
+  }
+
+  // ── Song Info modal ────────────────────────────────────────────────────────
+  const openInfo = async (song, e) => {
+    e.stopPropagation()
+    setInfoSong(song); setInfoMeta(null)
+    const meta = await fetchOEmbed(song.videoId)
+    setInfoMeta(meta)
+  }
+
+  // ── Auth ───────────────────────────────────────────────────────────────────
   const handleLogin = async () => { try { await signInWithPopup(auth, googleProvider) } catch (e) { console.error(e) } }
   const handleLogout = async () => { await signOut(auth) }
 
+  // ── Display ────────────────────────────────────────────────────────────────
   const isInSearch = searchQuery.trim().length >= 2
+  const activePl = playlists.find(p => p.id === activePlId)
 
   const displaySongs = (() => {
     if (isInSearch) return searchResults
-    if (activeView === 'playlist') return playlist
+    if (activeView === 'playlist' && activePl) return activePl.songs || []
     if (activeView === 'liked') return likedSongs
     if (activeView === 'recent') return recentlyPlayed
     if (activeView === 'category' && activeCategory) return categoryCache[activeCategory.firestoreKey] || []
@@ -330,26 +430,28 @@ export default function Home() {
   const sectionTitle = (() => {
     if (isSearching) return 'Searching...'
     if (isInSearch) return `Results for "${searchQuery}"`
-    if (activeView === 'playlist') return '📋 My Playlist'
-    if (activeView === 'liked') return '❤️ Liked Songs'
-    if (activeView === 'recent') return '🕐 Recently Played'
+    if (activeView === 'playlist' && activePl) return activePl.name
+    if (activeView === 'liked') return 'Liked Songs'
+    if (activeView === 'recent') return 'Recently Played'
     if (activeView === 'category' && activeCategory) return activeCategory.label
-    return '🎵 Popular Stavans'
+    return 'Popular Stavans'
   })()
 
   const emptyMsg = (() => {
-    if (activeView === 'playlist') return user ? 'Your playlist is empty. Add songs using the + button.' : 'Sign in to save your playlist!'
-    if (activeView === 'liked') return user ? 'No liked songs yet. Tap ♡ on any song!' : 'Sign in to like songs!'
-    if (activeView === 'recent') return user ? 'No songs played yet. Start listening!' : 'Sign in to see your history!'
+    if (activeView === 'playlist') return 'This playlist is empty. Add songs using the + button!'
+    if (activeView === 'liked') return user ? 'No liked songs yet.' : 'Sign in to like songs!'
+    if (activeView === 'recent') return user ? 'No songs played yet.' : 'Sign in to see your history!'
     if (activeView === 'category') return 'No songs in this category yet. Coming soon!'
-    return 'No results found. Try a different search.'
+    return 'No results found.'
   })()
 
-  const SongCard = ({ song, index, showRemove }) => {
+  // ── Song Card ──────────────────────────────────────────────────────────────
+  const SongCard = ({ song, index }) => {
     const isLiked = likedSongs.some(s => s.videoId === song.videoId)
-    const inPlaylist = playlist.some(s => s.videoId === song.videoId)
+    const isCurrentPl = activeView === 'playlist' && activePlId
     return (
-      <div className={`${styles.songCard} ${currentSong?.videoId === song.videoId ? styles.playing : ''}`} onClick={() => playSong(song)}>
+      <div className={`${styles.songCard} ${currentSong?.videoId === song.videoId ? styles.playing : ''}`}
+        onClick={() => playSong(song)}>
         <div className={styles.songNum}>{currentSong?.videoId === song.videoId && isPlaying ? '▶' : index + 1}</div>
         <div className={styles.songThumb}>
           {song.thumbnail ? <img src={song.thumbnail} alt={song.title} className={styles.thumbImg} /> : '🎵'}
@@ -358,13 +460,34 @@ export default function Home() {
           <p className={styles.songTitle}>{song.title}</p>
           <p className={styles.songSinger}>{song.singer}</p>
         </div>
-        <button className={`${styles.likeBtn} ${isLiked ? styles.liked : ''}`} onClick={(e) => toggleLike(song, e)}>{isLiked ? '❤️' : '🤍'}</button>
-        {showRemove
-          ? <button className={styles.removeBtn} onClick={(e) => removeFromPlaylist(song.videoId, e)}>✕</button>
-          : <button className={`${styles.addBtn} ${inPlaylist ? styles.inPlaylist : ''}`}
-              onClick={(e) => inPlaylist ? removeFromPlaylist(song.videoId, e) : addToPlaylist(song, e)}
-            >{inPlaylist ? '✓' : '+'}</button>
-        }
+
+        {/* Action buttons */}
+        <div className={styles.songActions}>
+          {/* Like */}
+          <button className={`${styles.actionBtn} ${isLiked ? styles.liked : ''}`} onClick={(e) => toggleLike(song, e)} title="Like">
+            {isLiked ? '❤️' : '🤍'}
+          </button>
+          {/* Play next (queue) */}
+          <button className={styles.actionBtn} onClick={(e) => addToQueue(song, e)} title="Play next">
+            ⏭
+          </button>
+          {/* Add to playlist */}
+          {!isCurrentPl && (
+            <button className={styles.actionBtn} onClick={(e) => { e.stopPropagation(); setAddToPlSong(song) }} title="Add to playlist">
+              ＋
+            </button>
+          )}
+          {/* Remove from playlist */}
+          {isCurrentPl && (
+            <button className={`${styles.actionBtn} ${styles.removeAction}`} onClick={(e) => handleRemoveFromPlaylist(song, e)} title="Remove from playlist">
+              ✕
+            </button>
+          )}
+          {/* Info */}
+          <button className={styles.actionBtn} onClick={(e) => openInfo(song, e)} title="Song info">
+            ℹ️
+          </button>
+        </div>
       </div>
     )
   }
@@ -373,25 +496,125 @@ export default function Home() {
     <div className={styles.container}>
       <div id="yt-player" className={styles.ytPlayerHidden} />
 
-      {/* Sidebar */}
+      {/* ── Song Info Modal ── */}
+      {infoSong && (
+        <div className={styles.modalOverlay} onClick={() => setInfoSong(null)}>
+          <div className={styles.modal} onClick={e => e.stopPropagation()}>
+            <button className={styles.modalClose} onClick={() => setInfoSong(null)}>✕</button>
+            <img src={infoSong.thumbnail} alt={infoSong.title} className={styles.modalThumb} />
+            <h3 className={styles.modalTitle}>{infoMeta?.title || infoSong.title}</h3>
+            <p className={styles.modalSinger}>{infoMeta?.singer || infoSong.singer}</p>
+            <div className={styles.modalActions}>
+              <a href={`https://youtube.com/watch?v=${infoSong.videoId}`} target="_blank" rel="noreferrer"
+                className={styles.modalYtBtn}>Open on YouTube</a>
+              <button className={styles.modalPlayBtn} onClick={() => { playSong(infoSong); setInfoSong(null) }}>
+                Play Now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Add to Playlist Modal ── */}
+      {addToPlSong && (
+        <div className={styles.modalOverlay} onClick={() => setAddToPlSong(null)}>
+          <div className={styles.modal} onClick={e => e.stopPropagation()}>
+            <button className={styles.modalClose} onClick={() => setAddToPlSong(null)}>✕</button>
+            <h3 className={styles.modalTitle}>Add to Playlist</h3>
+            <p className={styles.modalSinger}>{addToPlSong.title}</p>
+
+            {!user ? (
+              <p className={styles.emptyMsg}>Sign in to use playlists</p>
+            ) : (
+              <>
+                <div className={styles.plList}>
+                  {playlists.length === 0 && <p className={styles.emptyMsg} style={{marginTop:8}}>No playlists yet.</p>}
+                  {playlists.map(pl => (
+                    <button key={pl.id} className={styles.plPickBtn} onClick={() => handleAddToPlaylist(pl.id)}>
+                      <span>📋 {pl.name}</span>
+                      <span className={styles.plCount}>{pl.songs?.length || 0} songs</span>
+                    </button>
+                  ))}
+                </div>
+                {showNewPl ? (
+                  <div className={styles.newPlRow}>
+                    <input className={styles.newPlInput} placeholder="Playlist name..."
+                      value={newPlName} onChange={e => setNewPlName(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && handleCreatePlaylist()} autoFocus />
+                    <button className={styles.newPlSave} onClick={handleCreatePlaylist}>Create</button>
+                    <button className={styles.newPlCancel} onClick={() => setShowNewPl(false)}>✕</button>
+                  </div>
+                ) : (
+                  <button className={styles.newPlBtn} onClick={() => setShowNewPl(true)}>+ New Playlist</button>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Sidebar ── */}
       <div className={styles.sidebar}>
         <div className={styles.logo}><JainLogo /><span className={styles.logoText}>JinDhara</span></div>
 
         <nav className={styles.nav}>
           <button className={`${styles.navItem} ${activeView === 'home' ? styles.active : ''}`}
-            onClick={() => { setActiveView('home'); setSearchQuery(''); setActiveCategory(null) }}>🏠 Home</button>
-          <button className={`${styles.navItem} ${activeView === 'playlist' ? styles.active : ''}`}
-            onClick={() => { setActiveView('playlist'); setSearchQuery('') }}>
-            📋 My Playlist {playlist.length > 0 && <span className={styles.badge}>{playlist.length}</span>}
+            onClick={() => { setActiveView('home'); setSearchQuery(''); setActiveCategory(null); setActivePlId(null) }}>
+            Home
           </button>
           <button className={`${styles.navItem} ${activeView === 'liked' ? styles.active : ''}`}
-            onClick={() => { setActiveView('liked'); setSearchQuery('') }}>
-            ❤️ Liked Songs {likedSongs.length > 0 && <span className={styles.badge}>{likedSongs.length}</span>}
+            onClick={() => { setActiveView('liked'); setSearchQuery(''); setActivePlId(null) }}>
+            Liked Songs {likedSongs.length > 0 && <span className={styles.badge}>{likedSongs.length}</span>}
           </button>
           <button className={`${styles.navItem} ${activeView === 'recent' ? styles.active : ''}`}
-            onClick={() => { setActiveView('recent'); setSearchQuery('') }}>🕐 Recently Played</button>
+            onClick={() => { setActiveView('recent'); setSearchQuery(''); setActivePlId(null) }}>
+            Recently Played
+          </button>
+
+          {/* Queue indicator */}
+          {queue.length > 0 && (
+            <div className={styles.queueIndicator}>
+              <span>Up next: {queue.length} song{queue.length > 1 ? 's' : ''}</span>
+              <button onClick={() => setQueue([])}>Clear</button>
+            </div>
+          )}
         </nav>
 
+        {/* Playlists section */}
+        <div className={styles.categories}>
+          <div className={styles.plHeader}>
+            <p className={styles.sectionLabel}>MY PLAYLISTS</p>
+            {user && (
+              <button className={styles.newPlIconBtn} onClick={() => { setAddToPlSong(null); setShowNewPl(true); setActiveView('home') }}
+                title="New playlist">＋</button>
+            )}
+          </div>
+
+          {showNewPl && !addToPlSong && (
+            <div className={styles.newPlRow}>
+              <input className={styles.newPlInput} placeholder="Playlist name..."
+                value={newPlName} onChange={e => setNewPlName(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleCreatePlaylist()} autoFocus />
+              <button className={styles.newPlSave} onClick={handleCreatePlaylist}>Create</button>
+              <button className={styles.newPlCancel} onClick={() => setShowNewPl(false)}>✕</button>
+            </div>
+          )}
+
+          {playlists.length === 0 && !showNewPl && (
+            <p className={styles.emptyPlMsg}>{user ? 'No playlists yet.' : 'Sign in to create playlists.'}</p>
+          )}
+
+          {playlists.map(pl => (
+            <div key={pl.id} className={`${styles.plItem} ${activePlId === pl.id ? styles.active : ''}`}
+              onClick={() => openPlaylist(pl)}>
+              <span className={styles.plItemName}>{pl.name}</span>
+              <span className={styles.plItemCount}>{pl.songs?.length || 0}</span>
+              <button className={styles.plDeleteBtn} onClick={(e) => handleDeletePlaylist(pl, e)} title="Delete">✕</button>
+            </div>
+          ))}
+        </div>
+
+        {/* Browse by Bhagwan */}
         <div className={styles.categories}>
           <p className={styles.sectionLabel}>BROWSE BY BHAGWAN</p>
           {CATEGORIES.map(cat => (
@@ -419,13 +642,13 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Main */}
+      {/* ── Main ── */}
       <div className={styles.main}>
         <div className={styles.topBar}>
           <input className={styles.searchInput} type="text"
             placeholder={activeView === 'category' && activeCategory
-              ? `🔍  Search in ${activeCategory.label}...`
-              : '🔍  Search any stavan, bhajan, singer...'}
+              ? `Search in ${activeCategory.label}...`
+              : 'Search any stavan, bhajan, singer...'}
             value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
           <div className={styles.mobileAuth}>
             {!authLoading && (user
@@ -435,7 +658,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Horizontal category pills — visible on home and category views */}
+        {/* Category pills */}
         {(activeView === 'home' || activeView === 'category') && !isInSearch && (
           <div className={styles.categoryPills}>
             <button className={`${styles.pill} ${activeView === 'home' ? styles.pillActive : ''}`}
@@ -455,13 +678,11 @@ export default function Home() {
             <div className={styles.loadingWrap}><div className={styles.spinner} /><p>Searching...</p></div>
           ) : displaySongs.length === 0 ? (
             <p className={styles.emptyMsg}>{emptyMsg}</p>
-          ) : displaySongs.map((song, i) =>
-            <SongCard key={song.videoId || song.id} song={song} index={i} showRemove={activeView === 'playlist'} />
-          )}
+          ) : displaySongs.map((song, i) => <SongCard key={song.videoId || song.id} song={song} index={i} />)}
         </div>
       </div>
 
-      {/* Player */}
+      {/* ── Player ── */}
       {currentSong && (
         <div className={styles.player}>
           <div className={styles.playerLeft}>
@@ -476,6 +697,7 @@ export default function Home() {
               onClick={(e) => toggleLike(currentSong, e)}>
               {likedSongs.some(s => s.videoId === currentSong.videoId) ? '❤️' : '🤍'}
             </button>
+            {queue.length > 0 && <span className={styles.queueBadge}>{queue.length}</span>}
           </div>
           <div className={styles.playerCenter}>
             <div className={styles.controlBtnRow}>
@@ -501,14 +723,14 @@ export default function Home() {
         </div>
       )}
 
-      {/* Bottom Nav mobile */}
+      {/* ── Bottom Nav ── */}
       <div className={styles.bottomNav}>
         <button className={`${styles.bottomNavItem} ${activeView === 'home' ? styles.active : ''}`}
-          onClick={() => { setActiveView('home'); setSearchQuery(''); setActiveCategory(null) }}>
+          onClick={() => { setActiveView('home'); setSearchQuery(''); setActiveCategory(null); setActivePlId(null) }}>
           <span className={styles.bottomNavIcon}>🏠</span>Home
         </button>
         <button className={styles.bottomNavItem}
-          onClick={() => { setActiveView('home'); setTimeout(() => document.querySelector('input')?.focus(), 100) }}>
+          onClick={() => setTimeout(() => document.querySelector('input')?.focus(), 100)}>
           <span className={styles.bottomNavIcon}>🔍</span>Search
         </button>
         <button className={`${styles.bottomNavItem} ${activeView === 'liked' ? styles.active : ''}`}
@@ -516,8 +738,8 @@ export default function Home() {
           <span className={styles.bottomNavIcon}>❤️</span>Liked
         </button>
         <button className={`${styles.bottomNavItem} ${activeView === 'playlist' ? styles.active : ''}`}
-          onClick={() => { setActiveView('playlist'); setSearchQuery('') }}>
-          <span className={styles.bottomNavIcon}>📋</span>Playlist
+          onClick={() => { if (playlists.length > 0) openPlaylist(playlists[0]); else setActiveView('home') }}>
+          <span className={styles.bottomNavIcon}>📋</span>Playlists
         </button>
         <button className={`${styles.bottomNavItem} ${activeView === 'recent' ? styles.active : ''}`}
           onClick={() => { setActiveView('recent'); setSearchQuery('') }}>
